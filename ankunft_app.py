@@ -1,86 +1,62 @@
 import streamlit as st
-import requests
+import openrouteservice
+from openrouteservice import convert
 import folium
 from streamlit_folium import st_folium
 
-# API-KEYS
-OPENCAGE_KEY = "0b4cb9e750d1457fbc16e72fa5fa1ca3"
+# Bereinigter ORS-Key
+ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjA4MjNjY2EzNDM3YjRhMzhiZmYzNjNmODk0ZGRhNGI1IiwiaCI6Im11cm11cjY0In0="
 
-ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjA4MjNjY2EzNDM3YjRhMzhiZmYzNjNmODk0ZGRhNGI1IiwiaCI6Im11cm11cjY0In0=0"
-st.set_page_config(page_title="DriverRoute Live", layout="wide")
-st.title("🚛 DriverRoute Live – echte LKW-Route mit Zwischenstopps")
+client = openrouteservice.Client(key=ORS_KEY)
 
-# Adresse → Koordinaten (OpenCage)
-def geocode_place(place_name):
-    url = f"https://api.opencagedata.com/geocode/v1/json?q={place_name}&key={OPENCAGE_KEY}&limit=1&no_annotations=1&language=de"
-    r = requests.get(url)
-    if r.status_code == 200 and r.json()["results"]:
-        result = r.json()["results"][0]
-        return [result["geometry"]["lng"], result["geometry"]["lat"]]  # ORS benötigt [lon, lat]
-    return None
+st.title("DriverRoute Live")
+st.subheader("🚚 Volos → Saarlouis (Test ohne Zwischenstopp)")
 
-# Routing über OpenRouteService
-def get_route(coords):
-    url = "https://api.openrouteservice.org/v2/directions/driving-hgv/geojson"
-    headers = {
-        'Authorization': ORS_KEY,
-        'Content-Type': 'application/json'
-    }
-    body = {"coordinates": coords}
-    response = requests.post(url, json=body, headers=headers)
-    if response.status_code == 200:
-        return response.json()
-    return None
+# Adressen (fix)
+start_ort = "Volos, Griechenland"
+ziel_ort = "Saarlouis, Deutschland"
 
-# UI Eingabe
-start = st.text_input("🟢 Startort", "Volos, Griechenland")
+# Geokodierung
+def geocode(ort):
+    geocode_result = client.pelias_search(text=ort)
+    coords = geocode_result['features'][0]['geometry']['coordinates']
+    return coords
 
-# Etappen dynamisch
-if "waypoints" not in st.session_state:
-    st.session_state.waypoints = [""]
-if st.button("➕ Zwischenstopp hinzufügen"):
-    st.session_state.waypoints.append("")
+try:
+    coords_start = geocode(start_ort)
+    coords_ziel = geocode(ziel_ort)
 
-for i in range(len(st.session_state.waypoints)):
-    st.session_state.waypoints[i] = st.text_input(f"🟡 Zwischenstopp {i+1}", st.session_state.waypoints[i], key=f"wp_{i}")
+    # Routenberechnung
+    route = client.directions(
+        coordinates=[coords_start, coords_ziel],
+        profile='driving-hgv',
+        format='geojson'
+    )
 
-ziel = st.text_input("🔴 Zielort", "Saarlouis, Deutschland")
+    # Karte erstellen
+    m = folium.Map(location=[(coords_start[1] + coords_ziel[1]) / 2,
+                             (coords_start[0] + coords_ziel[0]) / 2],
+                   zoom_start=5)
 
-# Button zum Starten
-if st.button("📍 Route berechnen & anzeigen"):
-    locations = [start] + st.session_state.waypoints + [ziel]
-    coords = []
-    errors = []
+    folium.Marker(
+        location=[coords_start[1], coords_start[0]],
+        popup="Start: Volos",
+        icon=folium.Icon(color='green')
+    ).add_to(m)
 
-    # Alle Orte geocodieren
-    for loc in locations:
-        loc = loc.strip()
-        if loc:
-            geo = geocode_place(loc)
-            if geo:
-                coords.append(geo)
-            else:
-                errors.append(loc)
+    folium.Marker(
+        location=[coords_ziel[1], coords_ziel[0]],
+        popup="Ziel: Saarlouis",
+        icon=folium.Icon(color='red')
+    ).add_to(m)
 
-    if errors:
-        st.warning(f"Diese Orte konnten nicht gefunden werden: {', '.join(errors)}")
+    folium.PolyLine(
+        locations=[(lat, lon) for lon, lat in route['features'][0]['geometry']['coordinates']],
+        color='blue',
+        weight=4
+    ).add_to(m)
 
-    # Route abrufen
-    if len(coords) >= 2:
-        route = get_route(coords)
-        if route:
-            m = folium.Map(location=coords[0][::-1], zoom_start=6)
-            folium.GeoJson(route, name="Route").add_to(m)
+    st_folium(m, width=700, height=500)
 
-            # Marker setzen
-            for idx, point in enumerate(coords):
-                folium.Marker(
-                    location=point[::-1],
-                    tooltip=f"{idx+1}: {locations[idx]}",
-                    icon=folium.Icon(color="green" if idx == 0 else ("red" if idx == len(coords)-1 else "orange"))
-                ).add_to(m)
-
-            st.markdown("### 🗺️ Straßenkarte mit Route")
-            st_folium(m, width=900, height=500)
-        else:
-            st.error("Fehler bei der Routenberechnung – bitte Key oder Eingabe prüfen.")
+except Exception as e:
+    st.error(f"Fehler bei der Routenberechnung: {e}")
