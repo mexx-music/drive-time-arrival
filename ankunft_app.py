@@ -55,15 +55,16 @@ now_local, local_tz = get_local_time_for_address(startort)
 
 pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
 if pause_aktiv:
-    abfahrt_pause = st.datetime_input("Geplante Abfahrt nach Pause", value=datetime.now() + timedelta(hours=9))
-    start_time = local_tz.localize(abfahrt_pause.replace(tzinfo=None))
+    abfahrt_datum = st.date_input("📅 Datum der Abfahrt nach Pause", value=now_local.date())
+    abfahrt_uhrzeit = st.time_input("⏰ Uhrzeit der Abfahrt nach Pause", value=(now_local + timedelta(hours=9)).time())
+    abfahrt_pause = datetime.combine(abfahrt_datum, abfahrt_uhrzeit)
+    start_time = local_tz.localize(abfahrt_pause)
 else:
     st.subheader("🕒 Geplante Abfahrtszeit")
     abfahrtsdatum = st.date_input("Datum", value=now_local.date())
     abfahrtszeit = st.time_input("Uhrzeit", value=now_local.time())
     start_time = local_tz.localize(datetime.combine(abfahrtsdatum, abfahrtszeit))
 
-# Verbleibende Lenkzeit HEUTE, nur wenn nicht in Pause
 verbleibend_heute = 0
 if not pause_aktiv:
     st.subheader("🔄 Verbleibende Lenkzeit HEUTE")
