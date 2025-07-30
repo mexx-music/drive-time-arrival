@@ -5,8 +5,8 @@ from streamlit_folium import st_folium
 
 # API-KEYS
 OPENCAGE_KEY = "0b4cb9e750d1457fbc16e72fa5fa1ca3"
-ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjA4MjNjY2EzNDM3YjRhMzhiZmYzNjNmODk0ZGRhNGI1IiwiaCI6Im11cm11cjY0In0=0"
 
+ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjA4MjNjY2EzNDM3YjRhMzhiZmYzNjNmODk0ZGRhNGI1IiwiaCI6Im11cm11cjY0In0=0"
 st.set_page_config(page_title="DriverRoute Live", layout="wide")
 st.title("🚛 DriverRoute Live – echte LKW-Route mit Zwischenstopps")
 
