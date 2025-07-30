@@ -6,7 +6,23 @@ import math
 from timezonefinder import TimezoneFinder
 import pytz
 import time
+def get_timezone_for_latlng(lat, lng):
+    timestamp = int(time.time())
+    tz_url = f"https://maps.googleapis.com/maps/api/timezone/json?location={lat},{lng}&timestamp={timestamp}&key={GOOGLE_API_KEY}"
+    tz_data = requests.get(tz_url).json()
+    if tz_data["status"] == "OK":
+        return tz_data["timeZoneId"]
+    else:
+        return "Europe/Vienna"
 
+def get_timezone_for_address(address):
+    geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+    geo_data = requests.get(geocode_url).json()
+    if geo_data["status"] == "OK":
+        lat = geo_data["results"][0]["geometry"]["location"]["lat"]
+        lng = geo_data["results"][0]["geometry"]["location"]["lng"]
+        return get_timezone_for_latlng(lat, lng)
+    return "Europe/Vienna"
 st.set_page_config(page_title="DriverRoute Multiday ETA", layout="centered")
 
 GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
