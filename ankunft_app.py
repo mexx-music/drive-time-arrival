@@ -45,7 +45,7 @@ if st.button("🧭 Route berechnen und anzeigen"):
     if not start or not ziel:
         st.error("❗ Bitte Start- und Zielort eingeben.")
     else:
-        with st.spinner("Suche Orte..."):
+        with st.spinner("🔎 Suche nach Koordinaten..."):
             lat_start, lon_start = geocode_location(start)
             lat_ziel, lon_ziel = geocode_location(ziel)
             waypoints = []
