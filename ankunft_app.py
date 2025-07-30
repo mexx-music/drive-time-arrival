@@ -27,13 +27,16 @@ def get_timezone_for_address(address):
     return "Europe/Vienna"
 
 def get_local_time_for_address(address):
-    tz_str = get_timezone_for_address(address)
-    tz = pytz.timezone(tz_str)
-    return datetime.now(tz), tz
+    try:
+        tz_str = get_timezone_for_address(address)
+        tz = pytz.timezone(tz_str)
+        return datetime.now(tz), tz
+    except:
+        return datetime.now(), pytz.timezone("Europe/Vienna")
 
 st.set_page_config(page_title="DriverRoute Multiday ETA", layout="centered")
 
-st.title("🚛 DriverRoute Multiday ETA – Pause-Modus")
+st.title("🚛 DriverRoute Multiday ETA – iPad Version")
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -56,13 +59,17 @@ now_local, local_tz = get_local_time_for_address(startort)
 pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
 if pause_aktiv:
     abfahrt_datum = st.date_input("📅 Datum der Abfahrt nach Pause", value=now_local.date())
-    abfahrt_uhrzeit = st.time_input("⏰ Uhrzeit der Abfahrt nach Pause", value=(now_local + timedelta(hours=9)).time())
+    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
+    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, 0)
+    abfahrt_uhrzeit = datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time()
     abfahrt_pause = datetime.combine(abfahrt_datum, abfahrt_uhrzeit)
     start_time = local_tz.localize(abfahrt_pause)
 else:
     st.subheader("🕒 Geplante Abfahrtszeit")
     abfahrtsdatum = st.date_input("Datum", value=now_local.date())
-    abfahrtszeit = st.time_input("Uhrzeit", value=now_local.time())
+    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
+    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
+    abfahrtszeit = datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time()
     start_time = local_tz.localize(datetime.combine(abfahrtsdatum, abfahrtszeit))
 
 verbleibend_heute = 0
