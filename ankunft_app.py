@@ -1,33 +1,22 @@
 import streamlit as st
 import requests
 import urllib.parse
-import geocoder
-import time
 
 # Google API-Key einfügen
 GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
 
 st.set_page_config(page_title="DriverRoute Live", layout="centered")
-
 st.title("🚚 DriverRoute Live – Ankunftszeit mit Zwischenstopps")
 
-# GPS-Ort ermitteln
-with st.spinner("Ermittle aktuellen Standort..."):
-    g = geocoder.ip('me')
-    current_location = g.latlng
-    time.sleep(1)
+# 📍 Startort manuell
+st.subheader("📍 Startort eingeben")
+startort = st.text_input("Startort (z. B. Volos, Griechenland)", placeholder="Ort oder Adresse")
+start_coords = urllib.parse.quote(startort) if startort else ""
 
-if current_location:
-    start_coords = f"{current_location[0]},{current_location[1]}"
-    st.success("Startort per GPS erkannt.")
-else:
-    st.warning("Startort konnte nicht automatisch ermittelt werden.")
-    start_coords = ""
+# 🛣️ Ziel und Zwischenstopps
+st.subheader("🧭 Ziel und Route")
 
-# Eingabefelder – mobilfreundlich
-st.subheader("🛣️ Route planen")
-
-ziel = st.text_input("🧭 Zielort eingeben", placeholder="z. B. Saarlouis, Deutschland", key="ziel")
+ziel = st.text_input("Zielort", placeholder="z. B. Saarlouis, Deutschland", key="ziel")
 
 zwischenstopps = []
 max_stops = 10
@@ -44,10 +33,10 @@ for i in range(st.session_state.stoppanzahl):
     stop = st.text_input(f"Zwischenstopp {i+1}", key=f"stop_{i}")
     zwischenstopps.append(stop)
 
-# Routenberechnung
+# 🚀 Route berechnen
 if st.button("🚀 Route berechnen"):
-    if not ziel:
-        st.error("Bitte Zielort eingeben.")
+    if not start_coords or not ziel:
+        st.error("Bitte Start- und Zielort eingeben.")
     else:
         waypoints = "|".join([urllib.parse.quote(s) for s in zwischenstopps]) if zwischenstopps else ""
         destination = urllib.parse.quote(ziel)
@@ -75,10 +64,10 @@ if st.button("🚀 Route berechnen"):
         else:
             st.error(f"Fehler bei der Routenberechnung: {data['status']}")
 
-# Karte anzeigen
+# 🗺️ Karte einbetten
 st.subheader("🗺️ Routenkarte")
 
-if ziel:
+if start_coords and ziel:
     embed_base = "https://www.google.com/maps/embed/v1/directions"
     map_url = f"{embed_base}?key={GOOGLE_API_KEY}&origin={start_coords}&destination={urllib.parse.quote(ziel)}"
     if zwischenstopps:
@@ -86,7 +75,7 @@ if ziel:
 
     st.components.v1.iframe(map_url, height=450)
 
-    # Extern öffnen bei Zwischenstopps
+    # Link zu Google Maps (extern)
     if zwischenstopps:
         ext_url = f"https://www.google.com/maps/dir/?api=1&origin={start_coords}&destination={urllib.parse.quote(ziel)}"
         ext_url += f"&waypoints={'|'.join([urllib.parse.quote(s) for s in zwischenstopps])}"
