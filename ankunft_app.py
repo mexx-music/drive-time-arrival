@@ -1,38 +1,55 @@
 import streamlit as st
 from streamlit_folium import st_folium
 import folium
+from geopy.geocoders import Nominatim
 from datetime import datetime, timedelta
 import pandas as pd
 
-# Titel
-st.set_page_config(page_title="LKW-Routenplaner Prototyp")
-st.title("🚛 DriverRoute Pro – Manuelle Etappen-Planung")
+st.set_page_config(page_title="DriverRoute – Manuell", layout="centered")
+st.title("🚛 DriverRoute Pro – Manuelle Orts-Eingabe mit Karte")
 
-# Karte vorbereiten
-m = folium.Map(location=[44.5, 23], zoom_start=5)
-folium.TileLayer('cartodbpositron').add_to(m)
-st.markdown("📍 **Klicke auf der Karte, um Wegpunkte zu setzen (Start, Etappen, Ziel).**")
+geolocator = Nominatim(user_agent="driver_route_app")
 
-# Karteninteraktion
-map_data = st_folium(m, width=700, height=500)
+start = st.text_input("🟢 Startort", "Volos, Griechenland")
+zwischen = st.text_area("🟡 Zwischenstopps (ein Ort pro Zeile)", "Kulata\nSofia\nCalafat\nNadlac\nWien")
+ziel = st.text_input("🔴 Zielort", "Saarlouis, Deutschland")
 
-# Punkte sammeln
-if map_data and map_data.get("last_clicked"):
-    if "waypoints" not in st.session_state:
-        st.session_state.waypoints = []
-    coords = map_data["last_clicked"]
-    st.session_state.waypoints.append((coords["lat"], coords["lng"]))
+orte = [start] + [x.strip() for x in zwischen.split("\n") if x.strip()] + [ziel]
 
-# Wegpunkte anzeigen und Zeit definieren
-if "waypoints" in st.session_state and st.session_state.waypoints:
-    st.subheader("🛣️ Etappen definieren")
+koordinaten = []
+etappen_namen = []
+
+for ort in orte:
+    try:
+        location = geolocator.geocode(ort)
+        if location:
+            koordinaten.append((location.latitude, location.longitude))
+            etappen_namen.append(location.address)
+        else:
+            koordinaten.append((None, None))
+            etappen_namen.append(f"❌ Nicht gefunden: {ort}")
+    except:
+        koordinaten.append((None, None))
+        etappen_namen.append(f"❌ Fehler: {ort}")
+
+if all(k != (None, None) for k in koordinaten):
+    m = folium.Map(location=koordinaten[0], zoom_start=5)
+    for i, coord in enumerate(koordinaten):
+        folium.Marker(coord, tooltip=f"{i+1}. {orte[i]}").add_to(m)
+    folium.PolyLine(koordinaten, color="blue").add_to(m)
+    st_folium(m, width=700, height=500)
+
+    st.subheader("⏱️ Etappen-Zeiten (geschätzt)")
     etappen = []
-    for i, (lat, lng) in enumerate(st.session_state.waypoints):
-        name = st.text_input(f"🗺️ Punkt {i+1} – Beschreibung", value=f"Etappe {i+1}", key=f"name_{i}")
-        zeit = st.number_input(f"⏱️ Zeit für Etappe {i+1} (in Stunden)", min_value=0.0, step=0.5, key=f"zeit_{i}")
-        etappen.append({"Name": name, "Lat": lat, "Lon": lng, "Dauer (h)": zeit})
+    for i in range(len(orte) - 1):
+        zeit = st.number_input(f"Fahrzeit von **{orte[i]}** → **{orte[i+1]}** (in Stunden)", min_value=0.0, step=0.5, key=f"zeit_{i}")
+        etappen.append({
+            "Von": orte[i],
+            "Nach": orte[i+1],
+            "Fahrzeit (h)": zeit
+        })
 
-    gesamtzeit = sum(e["Dauer (h)"] for e in etappen)
+    gesamtzeit = sum(e["Fahrzeit (h)"] for e in etappen)
     st.markdown(f"**🧮 Gesamte Fahrzeit:** {gesamtzeit} Stunden")
 
     abfahrt = st.time_input("🕓 Abfahrtszeit", value=datetime.now().time())
@@ -40,7 +57,6 @@ if "waypoints" in st.session_state and st.session_state.waypoints:
     ankunft = start_datetime + timedelta(hours=gesamtzeit)
 
     st.markdown(f"📍 **Geplante Ankunftszeit:** {ankunft.strftime('%A %H:%M')} Uhr")
-
-    # Tabelle anzeigen
-    df = pd.DataFrame(etappen)
-    st.dataframe(df)
+    st.dataframe(pd.DataFrame(etappen))
+else:
+    st.warning("⚠️ Einer oder mehrere Orte konnten nicht gefunden werden.")
