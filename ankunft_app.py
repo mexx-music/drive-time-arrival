@@ -2,43 +2,52 @@ import streamlit as st
 import datetime
 import urllib.parse
 
-st.set_page_config(page_title="DriverTime Arrival", layout="centered")
+st.set_page_config(page_title="DriverTime Arrival – Pro Version", layout="centered")
 
-st.title("🛣️ DriverTime Arrival")
+st.title("🚛 DriverTime Arrival – Pro Version mit Etappen")
 
-# Eingabefelder
-startort = st.text_input("📍 Startort", "Volos")
-zielort = st.text_input("🏁 Zielort", "Saarlouis")
-abfahrtszeit = st.time_input("🕓 Abfahrtszeit", datetime.datetime.now().time())
+# Start- und Zielort (größere Eingabefelder)
+startort = st.text_input("📍 Startort", "Volos", key="startort", placeholder="z. B. Volos, Griechenland")
+zielort = st.text_input("🏁 Zielort", "Saarlouis", key="zielort", placeholder="z. B. Saarlouis, Deutschland")
 
-st.markdown("### 🕰️ Verbleibende Lenkzeit")
-stunden = st.number_input("Stunden", min_value=0, max_value=9, value=4, step=1)
-minuten = st.number_input("Minuten", min_value=0, max_value=59, value=30, step=1)
+# Dynamisch erweiterbare Zwischenstopps
+st.markdown("### ➕ Zwischenstopps (optional)")
+st.session_state.stops = st.session_state.get("stops", [""])
+
+def add_stop():
+    st.session_state.stops.append("")
+
+if st.button("➕ Zwischenstopp hinzufügen"):
+    add_stop()
+
+for i, stop in enumerate(st.session_state.stops):
+    st.session_state.stops[i] = st.text_input(f"➡️ Zwischenziel {i+1}", value=stop, key=f"stop_{i}")
+
+# Abfahrtszeit und Lenkzeit
+abfahrtszeit = st.time_input("🕒 Abfahrtszeit", datetime.datetime.now().time())
+stunden = st.number_input("🕓 Verbleibende Lenkzeit – Stunden", 0, 9, 4)
+minuten = st.number_input("🕔 Minuten", 0, 59, 30)
 
 # Berechnung
-if st.button("🔍 Ankunftszeit berechnen & Karte anzeigen"):
+if st.button("🔍 Ankunft berechnen & Route anzeigen"):
     abfahrt = datetime.datetime.combine(datetime.date.today(), abfahrtszeit)
-    gesamtminuten = int(stunden) * 60 + int(minuten)
-    ankunft = abfahrt + datetime.timedelta(minutes=gesamtminuten)
+    lenkzeit = datetime.timedelta(hours=int(stunden), minutes=int(minuten))
+    ankunft = abfahrt + lenkzeit
+    st.success(f"🕒 Voraussichtliche Ankunft bei voller Lenkzeit: **{ankunft.strftime('%H:%M Uhr')}**")
 
-    st.markdown("### ✅ Ergebnis")
-    st.success(f"Voraussichtliche Ankunft bei voller Ausnutzung der Lenkzeit: **{ankunft.strftime('%H:%M Uhr')}**")
-
-    # Google Maps Vorschau
-    st.markdown("### 🌍 Google Maps Vorschau")
-
-    # Key hier einfügen
+    # Google Maps Vorschau (ohne Zwischenziele – technisch nicht unterstützt)
     google_maps_key = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
+    base_url = "https://www.google.com/maps/embed/v1/directions"
+    params = {
+        "key": google_maps_key,
+        "origin": startort,
+        "destination": zielort,
+        "mode": "driving"
+    }
+    embed_url = base_url + "?" + urllib.parse.urlencode(params)
 
-    # Eingabe auf URL-Format bringen
-    start_encoded = urllib.parse.quote(startort)
-    ziel_encoded = urllib.parse.quote(zielort)
+    if any(w.strip() for w in st.session_state.stops):
+        st.warning("⚠️ Zwischenstopps werden in dieser Karte nicht angezeigt – Google Embed API erlaubt keine Wegpunkte. Bitte ggf. externe Routenansicht nutzen.")
 
-    iframe_code = f'''
-    <iframe width="100%" height="450" style="border:0"
-    loading="lazy" allowfullscreen
-    src="https://www.google.com/maps/embed/v1/directions?key={google_maps_key}&origin={start_encoded}&destination={ziel_encoded}">
-    </iframe>
-    '''
-
-    st.components.v1.html(iframe_code, height=450)
+    st.markdown("### 🗺️ Routen-Vorschau (Google Maps)")
+    st.components.v1.iframe(embed_url, height=500)
