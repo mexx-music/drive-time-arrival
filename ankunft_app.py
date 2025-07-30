@@ -89,25 +89,14 @@ if st.button("📦 Route analysieren & ETA berechnen"):
 
     if data["status"] != "OK":
         st.error(f"Fehler: {data['status']}")
-            # Gesamtzeit in Minuten
+    else:
+        # Gesamtzeit in Minuten
         legs = data["routes"][0]["legs"]
         total_sec = sum([leg["duration"]["value"] for leg in legs])
         total_min = total_sec // 60
         km = round(sum([leg["distance"]["value"] for leg in legs]) / 1000, 1)
 
         st.success(f"🛣️ Strecke: {km} km ⏱️ Google-Fahrzeit: {total_min} min")
-
-        # Zeitzone Startort ermitteln (für korrekte ETA)
-        def get_timezone_for_address(address):
-            geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
-            geo_data = requests.get(geocode_url).json()
-            if geo_data["status"] == "OK":
-                lat = geo_data["results"][0]["geometry"]["location"]["lat"]
-                lng = geo_data["results"][0]["geometry"]["location"]["lng"]
-                tf = TimezoneFinder()
-                timezone_str = tf.timezone_at(lat=lat, lng=lng)
-                return timezone_str
-            return "Europe/Vienna"  # fallback
 
         start_tz_str = get_timezone_for_address(startort)
         ziel_tz_str = get_timezone_for_address(zielort)
@@ -183,4 +172,3 @@ if st.button("📦 Route analysieren & ETA berechnen"):
         if zwischenstopps:
             map_url += f"&waypoints={'|'.join([urllib.parse.quote(s) for s in zwischenstopps])}"
         st.components.v1.iframe(map_url, height=450)
-        
