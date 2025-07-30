@@ -1,77 +1,58 @@
 import streamlit as st
-from geopy.geocoders import OpenCage
-from streamlit_folium import st_folium
-import folium
 import requests
+import folium
+from streamlit_folium import st_folium
 
-# OpenCage API-Key (Testversion)
-API_KEY = "d338be0be2d34c9697b70cbfb9b2383d"
-geolocator = OpenCage(api_key=API_KEY)
+# -------------------------------
+# OpenCage API-Key (nur einsetzen)
+OPENCAGE_API_KEY = "d338be0be2d34c9697b70cbfb9b2383d"
+# -------------------------------
 
-st.set_page_config(page_title="DriverRoute Live", layout="centered")
-st.title("🚛 DriverRoute Live – Automatischer Startort & Manuelle Routenplanung")
+st.set_page_config(page_title="DriverRoute Pro", layout="wide")
 
-# GPS Startort (automatisch)
-st.subheader("📍 Startort (automatisch erkannt)")
-start_coords = st.experimental_get_query_params().get("coords")
+st.title("🚛 DriverRoute Pro – Manuelle Ortseingabe mit Karte")
 
-if start_coords:
-    lat, lon = map(float, start_coords[0].split(","))
-    start_location = geolocator.reverse((lat, lon), language='de')
-    start_name = start_location.address if start_location else "Unbekannt"
-else:
-    start_name = "Standort wird ermittelt …"
-    lat, lon = None, None
+# Ortssuche
+def geocode_place(place_name):
+    url = f"https://api.opencagedata.com/geocode/v1/json?q={place_name}&key={OPENCAGE_API_KEY}&limit=1&no_annotations=1&language=de"
+    response = requests.get(url)
+    if response.status_code == 200 and response.json()["results"]:
+        result = response.json()["results"][0]
+        return {
+            "name": result["formatted"],
+            "lat": result["geometry"]["lat"],
+            "lon": result["geometry"]["lng"]
+        }
+    return None
 
-st.markdown(f"**Startort**: {start_name}")
+# Eingabe-Felder
+start_input = st.text_input("🟢 Startort", placeholder="z. B. Volos, Griechenland")
+waypoints_input = st.text_area("🟡 Zwischenstopps (ein Ort pro Zeile)", placeholder="Kulata\nSofia\nCalafat\nNadlac")
+end_input = st.text_input("🔴 Zielort", placeholder="z. B. Saarlouis, Deutschland")
 
-# Zwischenstopps und Ziel
-st.subheader("📌 Zwischenstopps (ein Ort pro Zeile)")
-raw_stops = st.text_area("Zwischenziele eingeben (z. B. Kulata, Sofia)", height=120)
-stop_list = [line.strip() for line in raw_stops.split("\n") if line.strip()]
-
-zielort = st.text_input("🏁 Zielort (z. B. Saarlouis, Deutschland)")
-
-# Geocoding
-def geocode_place(place):
-    try:
-        location = geolocator.geocode(place)
-        if location:
-            return location.latitude, location.longitude
-    except:
-        return None
-
-# Karte & Route anzeigen
-if st.button("🗺️ Karte anzeigen"):
-    coords = []
-
-    if lat and lon:
-        coords.append((lat, lon))
-    else:
-        st.warning("Startort nicht verfügbar – bitte GPS-Verbindung prüfen.")
-        st.stop()
-
-    for ort in stop_list:
-        pos = geocode_place(ort)
-        if pos:
-            coords.append(pos)
-        else:
-            st.error(f"❌ Ort nicht gefunden: {ort}")
-            st.stop()
-
-    ziel_coords = geocode_place(zielort)
-    if ziel_coords:
-        coords.append(ziel_coords)
-    else:
-        st.error("❌ Zielort nicht gefunden.")
-        st.stop()
-
-    # Karte generieren
-    m = folium.Map(location=coords[0], zoom_start=6)
-    for idx, (lat, lon) in enumerate(coords):
-        icon = "green" if idx == 0 else ("red" if idx == len(coords)-1 else "orange")
-        folium.Marker(location=(lat, lon), tooltip=f"Stopp {idx+1}", icon=folium.Icon(color=icon)).add_to(m)
-        if idx > 0:
-            folium.PolyLine([coords[idx-1], coords[idx]], color="blue").add_to(m)
-
-    st_folium(m, width=700, height=500)
+if st.button("📍 Orte auf Karte anzeigen"):
+    # Verarbeitung der Orte
+    all_places = []
+    for raw_place in [start_input] + waypoints_input.split("\n") + [end_input]:
+        place = raw_place.strip()
+        if place:
+            location = geocode_place(place)
+            if location:
+                all_places.append(location)
+            else:
+                st.warning(f"Ort nicht gefunden: {place}")
+    
+    # Karte anzeigen, wenn alles okay
+    if all_places:
+        # Initialisiere Karte bei erstem Ort
+        m = folium.Map(location=[all_places[0]["lat"], all_places[0]["lon"]], zoom_start=6)
+        
+        # Marker & Linie
+        coords = []
+        for idx, loc in enumerate(all_places):
+            popup_text = f"{idx+1}. {loc['name']}"
+            folium.Marker(location=[loc["lat"], loc["lon"]], popup=popup_text).add_to(m)
+            coords.append([loc["lat"], loc["lon"]])
+        
+        folium.PolyLine(coords, color="blue", weight=4.5, opacity=0.7).add_to(m)
+        st_folium(m, width=900, height=500)
