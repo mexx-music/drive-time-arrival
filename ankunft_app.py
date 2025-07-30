@@ -33,7 +33,7 @@ def get_local_time_for_address(address):
 
 st.set_page_config(page_title="DriverRoute Multiday ETA", layout="centered")
 
-st.title("🚛 DriverRoute Multiday ETA – Version 2.1")
+st.title("🚛 DriverRoute Multiday ETA – Pause-Modus")
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -53,16 +53,19 @@ zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip() != ""]
 
 now_local, local_tz = get_local_time_for_address(startort)
 
-st.subheader("🕒 Geplante Abfahrtszeit")
-abfahrtsdatum = st.date_input("Datum", value=now_local.date())
-abfahrtszeit = st.time_input("Uhrzeit", value=now_local.time())
-geplante_abfahrt = local_tz.localize(datetime.combine(abfahrtsdatum, abfahrtszeit))
+pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
+if pause_aktiv:
+    abfahrt_pause = st.datetime_input("Geplante Abfahrt nach Pause", value=datetime.now() + timedelta(hours=9))
+    start_time = local_tz.localize(abfahrt_pause.replace(tzinfo=None))
+else:
+    st.subheader("🕒 Geplante Abfahrtszeit")
+    abfahrtsdatum = st.date_input("Datum", value=now_local.date())
+    abfahrtszeit = st.time_input("Uhrzeit", value=now_local.time())
+    start_time = local_tz.localize(datetime.combine(abfahrtsdatum, abfahrtszeit))
 
-st.subheader("🚦 Fahrtbeginn heute?")
-heute_fahren = st.checkbox("Ich fahre heute noch", value=True)
-
+# Verbleibende Lenkzeit HEUTE, nur wenn nicht in Pause
 verbleibend_heute = 0
-if heute_fahren:
+if not pause_aktiv:
     st.subheader("🔄 Verbleibende Lenkzeit HEUTE")
     col1, col2 = st.columns(2)
     with col1:
@@ -105,7 +108,7 @@ if st.button("📦 Route analysieren & ETA berechnen"):
         st.success(f"🛣️ Strecke: {km} km ⏱️ Google-Fahrzeit: {total_min} min")
 
         remaining_minutes = total_min
-        current_time = geplante_abfahrt
+        current_time = start_time
         log = []
         used_10h = 0
         used_9h_rest = 0
@@ -119,12 +122,13 @@ if st.button("📦 Route analysieren & ETA berechnen"):
             start_str = current_time.strftime("%Y-%m-%d %H:%M")
 
             if first_day:
-                if heute_fahren and verbleibend_heute > 0:
-                    max_drive = verbleibend_heute
+                if pause_aktiv:
+                    max_drive = 600 if zehner_fahrten[0] else 540
+                    if zehner_fahrten[0]:
+                        used_10h += 1
+                        zehner_index += 1
                 else:
-                    current_time += timedelta(days=1)
-                    current_time = current_time.replace(hour=8, minute=0)
-                    max_drive = 540
+                    max_drive = verbleibend_heute
                 first_day = False
             elif zehner_index < len(zehner_fahrten) and zehner_fahrten[zehner_index]:
                 max_drive = 600
