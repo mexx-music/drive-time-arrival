@@ -1,62 +1,52 @@
 import streamlit as st
 from streamlit_folium import st_folium
 import folium
-from geopy.geocoders import Nominatim
 from datetime import datetime, timedelta
 import pandas as pd
 
-st.set_page_config(page_title="DriverRoute – Manuell", layout="centered")
-st.title("🚛 DriverRoute Pro – Manuelle Orts-Eingabe mit Karte")
+st.set_page_config(page_title="Ankunftszeit mit GPS", layout="centered")
+st.title("🚛 DriveTime Pro – Ankunftszeit mit GPS-Startort")
 
-geolocator = Nominatim(user_agent="driver_route_app")
+# GPS-Ortung per Browser (funktioniert auf Mobilgeräten bei Standortfreigabe)
+st.markdown("""
+<script>
+navigator.geolocation.getCurrentPosition(function(position) {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    const form = document.createElement("form");
+    form.setAttribute("method", "post");
+    form.setAttribute("style", "display:none;");
+    form.innerHTML = `<input name="lat" value="${lat}"><input name="lon" value="${lon}">`;
+    document.body.appendChild(form);
+    form.submit();
+});
+</script>
+""", unsafe_allow_html=True)
 
-start = st.text_input("🟢 Startort", "Volos, Griechenland")
-zwischen = st.text_area("🟡 Zwischenstopps (ein Ort pro Zeile)", "Kulata\nSofia\nCalafat\nNadlac\nWien")
-ziel = st.text_input("🔴 Zielort", "Saarlouis, Deutschland")
+# Standortdaten empfangen
+lat = st.experimental_get_query_params().get("lat", [None])[0]
+lon = st.experimental_get_query_params().get("lon", [None])[0]
 
-orte = [start] + [x.strip() for x in zwischen.split("\n") if x.strip()] + [ziel]
-
-koordinaten = []
-etappen_namen = []
-
-for ort in orte:
-    try:
-        location = geolocator.geocode(ort)
-        if location:
-            koordinaten.append((location.latitude, location.longitude))
-            etappen_namen.append(location.address)
-        else:
-            koordinaten.append((None, None))
-            etappen_namen.append(f"❌ Nicht gefunden: {ort}")
-    except:
-        koordinaten.append((None, None))
-        etappen_namen.append(f"❌ Fehler: {ort}")
-
-if all(k != (None, None) for k in koordinaten):
-    m = folium.Map(location=koordinaten[0], zoom_start=5)
-    for i, coord in enumerate(koordinaten):
-        folium.Marker(coord, tooltip=f"{i+1}. {orte[i]}").add_to(m)
-    folium.PolyLine(koordinaten, color="blue").add_to(m)
+# Karte anzeigen
+if lat and lon:
+    coords = (float(lat), float(lon))
+    st.success(f"📍 Aktueller Standort erkannt: {coords}")
+    m = folium.Map(location=coords, zoom_start=13)
+    folium.Marker(location=coords, tooltip="Startposition (GPS)").add_to(m)
+    st_folium(m, width=700, height=500)
+else:
+    st.warning("📡 Standort wird abgerufen oder du kannst ihn manuell setzen.")
+    m = folium.Map(location=[44.5, 23], zoom_start=5)
     st_folium(m, width=700, height=500)
 
-    st.subheader("⏱️ Etappen-Zeiten (geschätzt)")
-    etappen = []
-    for i in range(len(orte) - 1):
-        zeit = st.number_input(f"Fahrzeit von **{orte[i]}** → **{orte[i+1]}** (in Stunden)", min_value=0.0, step=0.5, key=f"zeit_{i}")
-        etappen.append({
-            "Von": orte[i],
-            "Nach": orte[i+1],
-            "Fahrzeit (h)": zeit
-        })
+# Eingabefelder
+startort_name = st.text_input("🟢 Startort-Name (optional)", "")
+zielort = st.text_input("🔴 Zielort", "Saarlouis, Deutschland")
+fahrzeit = st.number_input("⏱️ Geschätzte Fahrzeit (Stunden)", min_value=0.0, step=0.5)
+abfahrt = st.time_input("🕓 Abfahrtszeit", value=datetime.now().time())
 
-    gesamtzeit = sum(e["Fahrzeit (h)"] for e in etappen)
-    st.markdown(f"**🧮 Gesamte Fahrzeit:** {gesamtzeit} Stunden")
-
-    abfahrt = st.time_input("🕓 Abfahrtszeit", value=datetime.now().time())
+# Ankunftszeit berechnen
+if fahrzeit > 0:
     start_datetime = datetime.now().replace(hour=abfahrt.hour, minute=abfahrt.minute, second=0, microsecond=0)
-    ankunft = start_datetime + timedelta(hours=gesamtzeit)
-
-    st.markdown(f"📍 **Geplante Ankunftszeit:** {ankunft.strftime('%A %H:%M')} Uhr")
-    st.dataframe(pd.DataFrame(etappen))
-else:
-    st.warning("⚠️ Einer oder mehrere Orte konnten nicht gefunden werden.")
+    ankunft = start_datetime + timedelta(hours=fahrzeit)
+    st.markdown(f"📍 **Geplante Ankunft in {zielort}:** {ankunft.strftime('%A %H:%M')} Uhr")
