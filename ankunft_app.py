@@ -3,7 +3,6 @@ import requests
 import urllib.parse
 from datetime import datetime, timedelta
 import math
-from timezonefinder import TimezoneFinder
 import pytz
 import time
 def get_timezone_for_latlng(lat, lng):
