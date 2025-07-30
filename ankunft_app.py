@@ -1,9 +1,9 @@
 import streamlit as st
 import requests
 
-# API Keys
+# Funktionierende API-Keys
 OPENCAGE_API_KEY = "0b4cb9e750d1457fbc16e72fa5fa1ca3"
-ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjA4MjNjY2EzNDM3YjRhMzhiZmYzNjNmODk0ZGRhNGI1IiwiaCI6Im11cm11cjY0In0=0"
+ORS_API_KEY = "5b3ce3597851110001cf6248986f9fdc37b4a50d80edbfb889e"
 
 def geocode_location(place):
     url = f"https://api.opencagedata.com/geocode/v1/json?q={place}&key={OPENCAGE_API_KEY}&limit=1"
@@ -21,22 +21,23 @@ def calculate_route(coords):
     res = requests.post(url, headers=headers, json=body)
     return res.json() if res.status_code == 200 else None
 
-st.set_page_config(page_title="ORS Kurztest: Köln → Nürnberg", layout="centered")
+# UI
+st.set_page_config(page_title="Test: Köln → Nürnberg", layout="centered")
 st.title("🧪 ORS Kurztest")
-st.markdown("Testet einfache Route Köln → Nürnberg über OpenRouteService.")
+st.markdown("Test: Route von Köln nach Nürnberg mit funktionierendem API-Key.")
 
-if st.button("➡️ Route Köln → Nürnberg starten"):
-    with st.spinner("Suche Koordinaten..."):
+if st.button("➡️ Route starten"):
+    with st.spinner("📍 Lade Koordinaten..."):
         start = geocode_location("Köln")
         ziel = geocode_location("Nürnberg")
 
         if not start or not ziel:
-            st.error("❌ Ort konnte nicht gefunden werden.")
+            st.error("❌ Ort nicht gefunden.")
         else:
             coords = [start, ziel]
             st.write("📍 Koordinaten:", coords)
-
             route = calculate_route(coords)
+
             if route:
                 summary = route["features"][0]["properties"]["summary"]
                 km = round(summary["distance"] / 1000, 1)
