@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 import math
 import pytz
 import time
+
+GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
+
 def get_timezone_for_latlng(lat, lng):
     timestamp = int(time.time())
     tz_url = f"https://maps.googleapis.com/maps/api/timezone/json?location={lat},{lng}&timestamp={timestamp}&key={GOOGLE_API_KEY}"
@@ -22,13 +25,16 @@ def get_timezone_for_address(address):
         lng = geo_data["results"][0]["geometry"]["location"]["lng"]
         return get_timezone_for_latlng(lat, lng)
     return "Europe/Vienna"
+
+def get_local_time_for_address(address):
+    tz_str = get_timezone_for_address(address)
+    tz = pytz.timezone(tz_str)
+    return datetime.now(tz), tz
+
 st.set_page_config(page_title="DriverRoute Multiday ETA", layout="centered")
 
-GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
+st.title("🚛 DriverRoute Multiday ETA – Version 2.1")
 
-st.title("🚛 DriverRoute Multiday ETA – Version 2.0")
-
-# Eingabe Start/Ziel/Stops
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
 
@@ -45,37 +51,38 @@ for i in range(len(st.session_state.zwischenstopps)):
 
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip() != ""]
 
-# Abfahrtszeit (manuell)
-st.subheader("🕒 Abfahrtszeit")
-abfahrtsdatum = st.date_input("Datum", value=datetime.now().date())
-abfahrtszeit = st.time_input("Uhrzeit", value=datetime.now().time())
-start_time_naiv = datetime.combine(abfahrtsdatum, abfahrtszeit)
+now_local, local_tz = get_local_time_for_address(startort)
 
-# Verbleibende Lenkzeit am 1. Tag
-st.subheader("🔄 Verbleibende Lenkzeit HEUTE")
-col1, col2 = st.columns(2)
-with col1:
-    lenk_h = st.number_input("Stunden übrig", 0, 10, value=9)
-with col2:
-    lenk_m = st.number_input("Minuten übrig", 0, 59, value=0)
-verbleibend_heute = lenk_h * 60 + lenk_m
+st.subheader("🕒 Geplante Abfahrtszeit")
+abfahrtsdatum = st.date_input("Datum", value=now_local.date())
+abfahrtszeit = st.time_input("Uhrzeit", value=now_local.time())
+geplante_abfahrt = local_tz.localize(datetime.combine(abfahrtsdatum, abfahrtszeit))
 
-# Kästchen für 10h-Tage
+st.subheader("🚦 Fahrtbeginn heute?")
+heute_fahren = st.checkbox("Ich fahre heute noch", value=True)
+
+verbleibend_heute = 0
+if heute_fahren:
+    st.subheader("🔄 Verbleibende Lenkzeit HEUTE")
+    col1, col2 = st.columns(2)
+    with col1:
+        lenk_h = st.number_input("Stunden übrig", 0, 10, value=9)
+    with col2:
+        lenk_m = st.number_input("Minuten übrig", 0, 59, value=0)
+    verbleibend_heute = lenk_h * 60 + lenk_m
+
 st.subheader("🟦 10-Stunden-Fahrten (max. 2/Woche)")
 zehner_fahrten = []
 for i in range(2):
     zehner_fahrten.append(st.checkbox(f"10h-Fahrt nutzen (Tag {i+1})", value=True, key=f"10h_{i}"))
 
-# Kästchen für 9h-Ruhepausen
 st.subheader("🌙 9-Stunden-Ruhepausen (max. 3/Woche)")
 neuner_ruhen = []
 for i in range(3):
     neuner_ruhen.append(st.checkbox(f"9h-Ruhe erlaubt (Nacht {i+1})", value=True, key=f"9h_{i}"))
 
-# Tankpause optional
 tankpause = st.checkbox("⛽ Zusätzliche Tankpause einplanen (30 min)")
 
-# Google Directions API vorbereiten
 if st.button("📦 Route analysieren & ETA berechnen"):
     start_coords = urllib.parse.quote(startort)
     ziel_coords = urllib.parse.quote(zielort)
@@ -90,7 +97,6 @@ if st.button("📦 Route analysieren & ETA berechnen"):
     if data["status"] != "OK":
         st.error(f"Fehler: {data['status']}")
     else:
-        # Gesamtzeit in Minuten
         legs = data["routes"][0]["legs"]
         total_sec = sum([leg["duration"]["value"] for leg in legs])
         total_min = total_sec // 60
@@ -98,15 +104,8 @@ if st.button("📦 Route analysieren & ETA berechnen"):
 
         st.success(f"🛣️ Strecke: {km} km ⏱️ Google-Fahrzeit: {total_min} min")
 
-        start_tz_str = get_timezone_for_address(startort)
-        ziel_tz_str = get_timezone_for_address(zielort)
-        start_tz = pytz.timezone(start_tz_str)
-        ziel_tz = pytz.timezone(ziel_tz_str)
-        start_time = start_tz.localize(start_time_naiv)
-
-        # ETA-Berechnung über mehrere Tage
         remaining_minutes = total_min
-        current_time = start_time
+        current_time = geplante_abfahrt
         log = []
         used_10h = 0
         used_9h_rest = 0
@@ -120,19 +119,21 @@ if st.button("📦 Route analysieren & ETA berechnen"):
             start_str = current_time.strftime("%Y-%m-%d %H:%M")
 
             if first_day:
-                max_drive = verbleibend_heute
+                if heute_fahren and verbleibend_heute > 0:
+                    max_drive = verbleibend_heute
+                else:
+                    current_time += timedelta(days=1)
+                    current_time = current_time.replace(hour=8, minute=0)
+                    max_drive = 540
                 first_day = False
             elif zehner_index < len(zehner_fahrten) and zehner_fahrten[zehner_index]:
                 max_drive = 600
                 used_10h += 1
                 zehner_index += 1
-                taginfo = "10h-Tag"
             else:
                 max_drive = 540
-                taginfo = "9h-Tag"
 
             gefahren = min(remaining_minutes, max_drive)
-
             pflichtpausen = math.floor(gefahren / 270)
             pause_min = pflichtpausen * 45
 
@@ -145,7 +146,6 @@ if st.button("📦 Route analysieren & ETA berechnen"):
 
             remaining_minutes -= gefahren
 
-            # Ruhezeit einplanen
             if remaining_minutes > 0:
                 if neuner_index < len(neuner_ruhen) and neuner_ruhen[neuner_index]:
                     rest = 540
@@ -159,14 +159,13 @@ if st.button("📦 Route analysieren & ETA berechnen"):
             else:
                 current_time = tages_ende
 
-        eta_ziel = current_time.astimezone(ziel_tz)
+        eta_ziel = current_time.astimezone(local_tz)
         st.markdown("## 📋 Fahrplan:")
         for eintrag in log:
             st.markdown(eintrag)
 
-        st.success(f"✅ ETA am Ziel: {eta_ziel.strftime('%A, %H:%M Uhr')} ({ziel_tz.zone})")
+        st.success(f"✅ ETA am Ziel: {eta_ziel.strftime('%A, %H:%M Uhr')} ({local_tz.zone})")
 
-        # Karte einfügen
         st.subheader("🗺️ Routenkarte")
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={start_coords}&destination={ziel_coords}"
         if zwischenstopps:
