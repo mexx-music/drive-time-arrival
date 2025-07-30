@@ -1,39 +1,94 @@
 import streamlit as st
-import datetime
+import requests
 import urllib.parse
+import geocoder
+import time
 
-st.set_page_config(page_title="DriverTime Arrival – mit Routenoptionen", layout="centered")
-st.title("🚛 DriverTime Arrival – mit Routenoptionen")
+# Google API-Key einfügen
+GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
 
-# Eingabefelder
-startort = st.text_input("📍 Startort", "Volos")
-zielort = st.text_input("🏁 Zielort", "Saarlouis")
+st.set_page_config(page_title="DriverRoute Live", layout="centered")
 
-# Zwischenstopps manuell als Liste
-zwischenstopps = st.text_area("➕ Zwischenstopps (einen Ort pro Zeile)", "Sofia\nCalafat\nNadlac")
+st.title("🚚 DriverRoute Live – Ankunftszeit mit Zwischenstopps")
 
-# Zeitangaben
-abfahrtszeit = st.time_input("🕒 Abfahrtszeit", datetime.datetime.now().time())
-stunden = st.number_input("🕓 Lenkzeit – Stunden", 0, 9, 4)
-minuten = st.number_input("🕔 Minuten", 0, 59, 30)
+# GPS-Ort ermitteln
+with st.spinner("Ermittle aktuellen Standort..."):
+    g = geocoder.ip('me')
+    current_location = g.latlng
+    time.sleep(1)
 
-# Routing-Option
-routing_option = st.radio("🗺️ Routenansicht wählen", ["Nur Berechnung", "Google Maps extern öffnen"])
+if current_location:
+    start_coords = f"{current_location[0]},{current_location[1]}"
+    st.success("Startort per GPS erkannt.")
+else:
+    st.warning("Startort konnte nicht automatisch ermittelt werden.")
+    start_coords = ""
 
-# Berechnen & Anzeigen
-if st.button("🔍 Ankunft berechnen & Route anzeigen"):
-    abfahrt = datetime.datetime.combine(datetime.date.today(), abfahrtszeit)
-    lenkzeit = datetime.timedelta(hours=stunden, minutes=minuten)
-    ankunft = abfahrt + lenkzeit
+# Eingabefelder – mobilfreundlich
+st.subheader("🛣️ Route planen")
 
-    st.success(f"🕒 Voraussichtliche Ankunft bei voller Lenkzeit: **{ankunft.strftime('%H:%M Uhr')}**")
+ziel = st.text_input("🧭 Zielort eingeben", placeholder="z. B. Saarlouis, Deutschland", key="ziel")
 
-    # Route öffnen – Google Maps Direktlink generieren
-    if routing_option == "Google Maps extern öffnen":
-        stops = [startort] + [s.strip() for s in zwischenstopps.split("\n") if s.strip()] + [zielort]
-        url_teile = [urllib.parse.quote(s) for s in stops]
-        gmaps_link = f"https://www.google.com/maps/dir/" + "/".join(url_teile)
+zwischenstopps = []
+max_stops = 10
+if 'stoppanzahl' not in st.session_state:
+    st.session_state.stoppanzahl = 0
 
-        st.markdown("### 🌍 Route mit Zwischenzielen")
-        st.markdown(f"[➡️ Route in Google Maps öffnen]({gmaps_link})")
-        st.info("📲 Die Route öffnet sich in einem neuen Tab. Kehre danach einfach hierher zurück.")
+if st.button("➕ Zwischenstopp hinzufügen"):
+    if st.session_state.stoppanzahl < max_stops:
+        st.session_state.stoppanzahl += 1
+    else:
+        st.warning("Maximal 10 Zwischenstopps möglich.")
+
+for i in range(st.session_state.stoppanzahl):
+    stop = st.text_input(f"Zwischenstopp {i+1}", key=f"stop_{i}")
+    zwischenstopps.append(stop)
+
+# Routenberechnung
+if st.button("🚀 Route berechnen"):
+    if not ziel:
+        st.error("Bitte Zielort eingeben.")
+    else:
+        waypoints = "|".join([urllib.parse.quote(s) for s in zwischenstopps]) if zwischenstopps else ""
+        destination = urllib.parse.quote(ziel)
+
+        url = f"https://maps.googleapis.com/maps/api/directions/json?origin={start_coords}&destination={destination}&key={GOOGLE_API_KEY}"
+        if waypoints:
+            url += f"&waypoints={waypoints}"
+
+        response = requests.get(url)
+        data = response.json()
+
+        if data["status"] == "OK":
+            route = data["routes"][0]
+            legs = route["legs"]
+
+            total_distance = 0
+            total_duration = 0
+            for leg in legs:
+                total_distance += leg["distance"]["value"]
+                total_duration += leg["duration"]["value"]
+
+            km = round(total_distance / 1000, 1)
+            minuten = int(total_duration / 60)
+            st.success(f"📏 Strecke: {km} km\n⏱️ Fahrzeit: {minuten} Minuten")
+        else:
+            st.error(f"Fehler bei der Routenberechnung: {data['status']}")
+
+# Karte anzeigen
+st.subheader("🗺️ Routenkarte")
+
+if ziel:
+    embed_base = "https://www.google.com/maps/embed/v1/directions"
+    map_url = f"{embed_base}?key={GOOGLE_API_KEY}&origin={start_coords}&destination={urllib.parse.quote(ziel)}"
+    if zwischenstopps:
+        map_url += f"&waypoints={'|'.join([urllib.parse.quote(s) for s in zwischenstopps])}"
+
+    st.components.v1.iframe(map_url, height=450)
+
+    # Extern öffnen bei Zwischenstopps
+    if zwischenstopps:
+        ext_url = f"https://www.google.com/maps/dir/?api=1&origin={start_coords}&destination={urllib.parse.quote(ziel)}"
+        ext_url += f"&waypoints={'|'.join([urllib.parse.quote(s) for s in zwischenstopps])}"
+        st.markdown(f"[🌐 Google Maps extern öffnen]({ext_url})", unsafe_allow_html=True)
+        st.markdown("⬅️ [Zurück zur App](#)", unsafe_allow_html=True)
