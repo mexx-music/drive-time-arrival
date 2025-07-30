@@ -34,9 +34,9 @@ def get_local_time_for_address(address):
     except:
         return datetime.now(), pytz.timezone("Europe/Vienna")
 
-st.set_page_config(page_title="DriverRoute Multiday ETA", layout="centered")
+st.set_page_config(page_title="DriverRoute Realistische ETA", layout="centered")
 
-st.title("🚛 DriverRoute Multiday ETA – iPad Version")
+st.title("🚛 DriverRoute ETA – mit realistischer LKW-Zeit")
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -82,6 +82,9 @@ if not pause_aktiv:
         lenk_m = st.number_input("Minuten übrig", 0, 59, value=0)
     verbleibend_heute = lenk_h * 60 + lenk_m
 
+st.subheader("🛻 Durchschnittliche LKW-Geschwindigkeit")
+geschwindigkeit = st.number_input("Geschwindigkeit (km/h)", min_value=60, max_value=120, value=80)
+
 st.subheader("🟦 10-Stunden-Fahrten (max. 2/Woche)")
 zehner_fahrten = []
 for i in range(2):
@@ -109,11 +112,12 @@ if st.button("📦 Route analysieren & ETA berechnen"):
         st.error(f"Fehler: {data['status']}")
     else:
         legs = data["routes"][0]["legs"]
-        total_sec = sum([leg["duration"]["value"] for leg in legs])
-        total_min = total_sec // 60
         km = round(sum([leg["distance"]["value"] for leg in legs]) / 1000, 1)
 
-        st.success(f"🛣️ Strecke: {km} km ⏱️ Google-Fahrzeit: {total_min} min")
+        # Reale LKW-Fahrzeit aus km + Geschwindigkeit
+        total_min = km / geschwindigkeit * 60
+
+        st.success(f"🛣️ Strecke: {km} km ⏱️ Realistische Fahrzeit: {round(total_min)} min mit {geschwindigkeit} km/h")
 
         remaining_minutes = total_min
         current_time = start_time
@@ -154,7 +158,7 @@ if st.button("📦 Route analysieren & ETA berechnen"):
                 used_tankpause = True
 
             tages_ende = current_time + timedelta(minutes=gefahren + pause_min)
-            log.append(f"📆 {tag} – Start: {start_str} → Fahrt: {gefahren} min + Pause: {pause_min} min → Ende: {tages_ende.strftime('%H:%M')}")
+            log.append(f"📆 {tag} – Start: {start_str} → Fahrt: {int(gefahren)} min + Pause: {pause_min} min → Ende: {tages_ende.strftime('%H:%M')}")
 
             remaining_minutes -= gefahren
 
