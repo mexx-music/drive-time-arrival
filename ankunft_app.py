@@ -13,3 +13,38 @@ def geocode_location(place):
         coords = data["results"][0]["geometry"]
         return [coords["lng"], coords["lat"]]
     return None
+
+def calculate_route(coords):
+    url = "https://api.openrouteservice.org/v2/directions/driving-car"
+    headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
+    body = {"coordinates": coords, "instructions": False}
+    res = requests.post(url, headers=headers, json=body)
+    return res.json() if res.status_code == 200 else None
+
+st.set_page_config(page_title="ORS Kurztest: Köln → Nürnberg", layout="centered")
+st.title("🧪 ORS Kurztest")
+st.markdown("Testet einfache Route Köln → Nürnberg über OpenRouteService.")
+
+if st.button("➡️ Route Köln → Nürnberg starten"):
+    with st.spinner("Suche Koordinaten..."):
+        start = geocode_location("Köln")
+        ziel = geocode_location("Nürnberg")
+
+        if not start or not ziel:
+            st.error("❌ Ort konnte nicht gefunden werden.")
+        else:
+            coords = [start, ziel]
+            st.write("📍 Koordinaten:", coords)
+
+            route = calculate_route(coords)
+            if route:
+                summary = route["features"][0]["properties"]["summary"]
+                km = round(summary["distance"] / 1000, 1)
+                std = round(summary["duration"] / 3600, 1)
+                st.success(f"🛣️ {km} km – ⏱️ {std} Stunden")
+                st.map({
+                    "lat": [start[1], ziel[1]],
+                    "lon": [start[0], ziel[0]]
+                })
+            else:
+                st.error("❌ Route konnte nicht berechnet werden (ORS-Fehler).")
