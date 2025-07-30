@@ -28,20 +28,20 @@ st.markdown("""
 
 st.title("🚛 DriverRoute Live – Lenkzeit + ETA Vorschau")
 
-# Abfahrtszeit manuell
+# 🕒 Abfahrtszeit
 st.subheader("🕒 Abfahrtszeit")
 abfahrtsdatum = st.date_input("Datum", value=datetime.now().date())
 abfahrtszeit = st.time_input("Uhrzeit", value=datetime.now().time())
 abfahrt_datetime = datetime.combine(abfahrtsdatum, abfahrtszeit)
 
-# Start- und Ziel
+# 📍 Start und Ziel
 st.subheader("📍 Start & Ziel")
-startort = st.text_input("Startort", placeholder="z. B. Volos, Griechenland")
-zielort = st.text_input("Zielort", placeholder="z. B. Saarlouis, Deutschland")
+startort = st.text_input("Startort", placeholder="z. B. Volos")
+zielort = st.text_input("Zielort", placeholder="z. B. Saarlouis")
 start_coords = urllib.parse.quote(startort) if startort else ""
 ziel_coords = urllib.parse.quote(zielort) if zielort else ""
 
-# Zwischenstopps
+# 🛑 Zwischenstopps
 st.subheader("🛑 Zwischenstopps")
 max_stops = 10
 if "zwischenstopps" not in st.session_state:
@@ -59,21 +59,30 @@ for i in range(len(st.session_state.zwischenstopps)):
 
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip() != ""]
 
-# Lenkzeitoptionen
+# ⏱️ Lenkzeitoptionen
 st.subheader("⏱️ Lenkzeit-Regelung")
-zehnertage = st.number_input("Verfügbare 10-Stunden-Tage", min_value=0, max_value=2, value=1)
-heute_10h = st.radio("Lenkzeit heute:", ["9 Stunden", "10 Stunden"]) == "10 Stunden"
-tankpause = st.checkbox("🛢️ Zusätzliche Tankpause (30 Minuten)")
+heute_10h = st.radio("Lenkzeit heute erlaubt:", ["9 Stunden", "10 Stunden"]) == "10 Stunden"
 
-max_lenkzeit = 10 * 60 if heute_10h else 9 * 60
+col1, col2 = st.columns(2)
+with col1:
+    verbleibend_h = st.number_input("Verbleibende Lenkzeit – Stunden", 0, 10, value=4)
+with col2:
+    verbleibend_m = st.number_input("Verbleibende Lenkzeit – Minuten", 0, 59, value=0)
 
-# Berechnung starten
-st.subheader("📦 Berechnung")
+verbleibend_total_min = verbleibend_h * 60 + verbleibend_m
+max_legal = 10*60 if heute_10h else 9*60
+if verbleibend_total_min > max_legal:
+    st.warning(f"⚠️ Du hast mehr eingegeben als heute erlaubt: Max {max_legal} min")
+    verbleibend_total_min = max_legal
 
+tankpause = st.checkbox("🛢️ Zusätzliche Tankpause einplanen (30 min)")
+
+# 🚀 Berechnung
+st.subheader("📦 Route berechnen")
 if st.markdown('<div class="big-button">', unsafe_allow_html=True) or True:
-    if st.button("📍 Route + ETA berechnen"):
+    if st.button("📍 Jetzt berechnen"):
         if not start_coords or not ziel_coords:
-            st.error("Bitte Start- und Zielort eingeben.")
+            st.error("Start und Ziel müssen ausgefüllt sein.")
         else:
             waypoint_string = "|".join([urllib.parse.quote(s) for s in zwischenstopps]) if zwischenstopps else ""
             url = f"https://maps.googleapis.com/maps/api/directions/json?origin={start_coords}&destination={ziel_coords}&key={GOOGLE_API_KEY}"
@@ -95,30 +104,29 @@ if st.markdown('<div class="big-button">', unsafe_allow_html=True) or True:
 
                 fahrzeit_min = int(total_duration / 60)
                 km = round(total_distance / 1000, 1)
-                st.success(f"📏 Strecke: {km} km ⏱️ Reine Fahrzeit: {fahrzeit_min} Minuten")
+                st.success(f"📏 Strecke: {km} km ⏱️ Reine Fahrzeit: {fahrzeit_min} Min.")
 
-                # Pflichtpausen berechnen
-                pausen_anzahl = math.floor(fahrzeit_min / 270)
-                pause_min = pausen_anzahl * 45
+                # Pflichtpausen: alle 4,5h → 270 min → +45 min
+                pflichtpausen = math.floor(fahrzeit_min / 270)
+                pause_min = pflichtpausen * 45
                 if tankpause:
                     pause_min += 30
 
-                gesamt_min = fahrzeit_min + pause_min
+                gesamt_benoetigt = fahrzeit_min + pause_min
 
-                if fahrzeit_min > max_lenkzeit:
-                    st.warning(f"⚠️ Ziel nicht erreichbar: Nur {max_lenkzeit} Minuten Lenkzeit erlaubt")
+                if gesamt_benoetigt > verbleibend_total_min:
+                    st.warning(f"⚠️ Ziel nicht erreichbar heute – Du brauchst {gesamt_benoetigt} min, hast aber nur {verbleibend_total_min} min verfügbar.")
                 else:
-                    eta = abfahrt_datetime + timedelta(minutes=gesamt_min)
-                    st.info(f"🕓 Voraussichtliche Ankunft: {eta.strftime('%A, %H:%M Uhr')} (inkl. {pause_min} Min. Pause)")
+                    eta = abfahrt_datetime + timedelta(minutes=gesamt_benoetigt)
+                    st.info(f"🕓 Ankunft: {eta.strftime('%A, %H:%M Uhr')} (Pausen: {pause_min} min)")
 
             else:
-                st.error(f"Fehler bei der Routenberechnung: {data['status']}")
+                st.error(f"Routenfehler: {data['status']}")
 
-# Karte anzeigen
+# 🗺️ Karte
 st.subheader("🗺️ Routenkarte")
 if start_coords and ziel_coords:
     embed_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={start_coords}&destination={ziel_coords}"
     if zwischenstopps:
         embed_url += f"&waypoints={'|'.join([urllib.parse.quote(s) for s in zwischenstopps])}"
-
     st.components.v1.iframe(embed_url, height=450)
