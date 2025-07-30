@@ -1,11 +1,12 @@
 import streamlit as st
 import requests
 
+# API Keys
 OPENCAGE_API_KEY = "0b4cb9e750d1457fbc16e72fa5fa1ca3"
 ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjA4MjNjY2EzNDM3YjRhMzhiZmYzNjNmODk0ZGRhNGI1IiwiaCI6Im11cm11cjY0In0=0"
 
 st.set_page_config(page_title="DriverRoute Live", layout="centered")
-st.title("🚛 DriverRoute Live – Ankunftszeit-Tool")
+st.title("🚛 DriverRoute Live – Ankunftszeit-Tool (PKW-Modus)")
 
 def geocode_location(place):
     url = f"https://api.opencagedata.com/geocode/v1/json?q={place}&key={OPENCAGE_API_KEY}&limit=1"
@@ -17,7 +18,7 @@ def geocode_location(place):
     return None, None
 
 def calculate_route(coords):
-    url = "https://api.openrouteservice.org/v2/directions/driving-hgv"
+    url = "https://api.openrouteservice.org/v2/directions/driving-car"  # <-- PKW-Profil statt LKW
     headers = {"Authorization": ORS_API_KEY, "Content-Type": "application/json"}
     body = {"coordinates": coords, "instructions": False}
     res = requests.post(url, headers=headers, json=body)
@@ -57,4 +58,4 @@ if st.button("🧭 Route berechnen und anzeigen"):
                 st.success(f"🛣️ {km} km – ⏱️ {std} Stunden")
                 st.map({"lat": [lat_start, lat_ziel], "lon": [lon_start, lon_ziel]})
             else:
-                st.error("❌ Route konnte nicht berechnet werden. ORS-Fehler.")
+                st.error("❌ Route konnte nicht berechnet werden (ORS-Fehler).")
