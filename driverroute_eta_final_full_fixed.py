@@ -175,13 +175,18 @@ def format_minuten(minuten):
     return f"{stunden}h{rest:02}"
 
 # Hilfsfunktion: Englischer Wochentag → Deutsch
+# Hilfsfunktion: Englischer Wochentag → Deutsch
 def wochentag_deutsch(dt):
     tage = {
-        "Monday": "Montag", "Tuesday": "Dienstag", "Wednesday": "Mittwoch",
-        "Thursday": "Donnerstag", "Friday": "Freitag",
-        "Saturday": "Samstag", "Sunday": "Sonntag"
-         return tage[dt.strftime("%A")]
-
+        "Monday": "Montag",
+        "Tuesday": "Dienstag",
+        "Wednesday": "Mittwoch",
+        "Thursday": "Donnerstag",
+        "Friday": "Freitag",
+        "Saturday": "Samstag",
+        "Sunday": "Sonntag"
+    }
+    return tage[dt.strftime("%A")]
         while remaining > 0:
             # Fähre einbauen (wenn geplant und Zeitpunkt erreicht)
             if faehren_anzeigen and fähre_index < len(st.session_state.faehren):
