@@ -112,9 +112,6 @@ if we_aktiv:
     we_ende = we_beginn + timedelta(minutes=we_dauer)
 else:
     we_beginn = we_ende = None
-
-# Dummy Button für ETA
-st.button("📦 Route analysieren & ETA berechnen")
 if st.button("📦 Route analysieren & ETA berechnen"):
 
     alle_orte = [startort] + zwischenstopps + [zielort]
