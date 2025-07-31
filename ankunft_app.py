@@ -1,34 +1,28 @@
 import streamlit as st
 
-st.markdown(
-    """
-    <style>
-    .time-selectbox select {
-        font-size: 28px !important;
-        height: 60px !important;
-        padding: 8px;
-    }
-    .time-label {
-        font-size: 24px !important;
-        font-weight: bold;
-        margin-top: 20px;
-        margin-bottom: 10px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.set_page_config(page_title="Uhrzeit Auswahl", layout="centered")
 
-st.markdown('<div class="time-label">⏰ Uhrzeit der Abfahrt eingeben:</div>', unsafe_allow_html=True)
+st.markdown("## 🕰️ Uhrzeit der Abfahrt (Touch-freundlich)")
 
-col1, col2 = st.columns(2)
+st.markdown("### Stunde wählen")
+cols_stunde = st.columns(6)
+stunden = list(range(0, 24))
+selected_hour = None
+for i, col in enumerate(cols_stunde):
+    with col:
+        if st.button(f"{stunden[i]:02d}", key=f"h{i}"):
+            selected_hour = stunden[i]
 
-with col1:
-    hour = st.selectbox("Stunde", [f"{i:02d}" for i in range(0, 24)], index=8, key="stunde")
-    st.markdown('<style>div[data-baseweb="select"]{font-size: 28px;}</style>', unsafe_allow_html=True)
+st.markdown("### Minute wählen (in 5er-Schritten)")
+cols_minute = st.columns(6)
+minuten = list(range(0, 60, 5))
+selected_minute = None
+for i, col in enumerate(cols_minute):
+    with col:
+        if st.button(f"{minuten[i]:02d}", key=f"m{i}"):
+            selected_minute = minuten[i]
 
-with col2:
-    minute = st.selectbox("Minute", [f"{i:02d}" for i in range(0, 60)], index=0, key="minute")
-    st.markdown('<style>div[data-baseweb="select"]{font-size: 28px;}</style>', unsafe_allow_html=True)
-
-st.success(f"⏱️ Gewählte Zeit: {hour}:{minute}")
+if selected_hour is not None and selected_minute is not None:
+    st.success(f"🕓 Gewählte Uhrzeit: {selected_hour:02d}:{selected_minute:02d}")
+elif selected_hour is not None or selected_minute is not None:
+    st.info("⏳ Bitte beide Werte auswählen: Stunde und Minute.")
