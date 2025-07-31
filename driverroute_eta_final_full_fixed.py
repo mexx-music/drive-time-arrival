@@ -187,7 +187,7 @@ def wochentag_deutsch(dt):
         "Sunday": "Sonntag"
     }
     return tage[dt.strftime("%A")]
-        while remaining > 0:
+    while remaining > 0:
             # Fähre einbauen (wenn geplant und Zeitpunkt erreicht)
             if faehren_anzeigen and fähre_index < len(st.session_state.faehren):
                 f = st.session_state.faehren[fähre_index]
