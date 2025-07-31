@@ -116,7 +116,8 @@ if faehren_anzeigen:
             f["datum"] = st.date_input(f"📅 Abfahrtstag {idx+1}", value=f["datum"], key=f"date_{idx}")
             f["stunde"] = st.number_input(f"🕓 Stunde {idx+1}", 0, 23, f["stunde"], key=f"hour_{idx}")
             f["minute"] = st.number_input(f"🕧 Minute {idx+1}", 0, 59, f["minute"], key=f"min_{idx}")
-            col_a, col_b = st.columns(2)
+
+col_a, col_b = st.columns(2)
 with col_a:
     st.subheader("10h-Fahrten (max. 2)")
     zehner_1 = st.checkbox("✅ 10h-Fahrt Nr. 1", value=True)
