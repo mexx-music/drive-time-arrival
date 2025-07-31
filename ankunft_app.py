@@ -1,14 +1,11 @@
-
 import streamlit as st
-from datetime import datetime
 
-st.set_page_config(page_title="Test: Uhrzeitwahl", layout="centered")
+st.title("🕒 ETA mit besserer Uhrzeiteingabe")
 
-st.title("🕒 Komfortable Uhrzeitwahl (mobilfreundlich)")
+col1, col2 = st.columns(2)
+with col1:
+    stunde = st.selectbox("🕓 Stunde", list(range(0, 24)), index=8)
+with col2:
+    minute = st.selectbox("🕧 Minute", list(range(0, 60, 5)), index=0)
 
-# Zeitwahl mit st.time_input – ohne Spalten, ohne Fokusstörung
-st.markdown("### ⏰ Wähle eine Uhrzeit (Zeiger-Uhr bei Touchgeräten):")
-abfahrtszeit = st.time_input("Abfahrtszeit wählen", value=datetime.now().time(), label_visibility="collapsed")
-
-# Ergebnis anzeigen
-st.success(f"Gewählte Zeit: {abfahrtszeit.strftime('%H:%M')} Uhr")
+st.write(f"Gewählte Uhrzeit: {stunde:02d}:{minute:02d}")
