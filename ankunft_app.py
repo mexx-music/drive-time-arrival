@@ -1,10 +1,9 @@
-
 import streamlit as st
 import requests
 import urllib.parse
 from datetime import datetime, timedelta
-import math
 import pytz
+import math
 import time
 
 GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
@@ -28,8 +27,8 @@ def get_local_time(address):
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
 
-st.set_page_config(page_title="DriverRoute ETA – WE Pause", layout="centered")
-st.title("🚛 DriverRoute ETA – inkl. Wochenruhe & Rücksetzung")
+st.set_page_config(page_title="DriverRoute ETA – Vollversion", layout="centered")
+st.title("🚛 DriverRoute ETA – inkl. Karte, Wochenruhe & Lenkzeit-Kästchen")
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -63,6 +62,10 @@ else:
     abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
     start_time = local_tz.localize(abfahrt_time)
 
+st.markdown("### 🕓 Wöchentliche Lenkzeit-Ausnahmen")
+zehner_check = st.multiselect("✅ Verfügbare 10h-Fahrten (max. 2)", ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"], default=["Montag", "Dienstag"])
+neuner_check = st.multiselect("✅ Verfügbare 9h-Ruhepausen (max. 3)", ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"], default=["Montag", "Dienstag", "Mittwoch"])
+
 wochenruhe_manuell = st.checkbox("🛌 Wochenruhepause während Tour manuell einfügen?")
 if wochenruhe_manuell:
     we_tag = st.date_input("Start der Wochenruhe", value=now_local.date(), key="we_date")
@@ -76,9 +79,6 @@ else:
     we_ende = None
 
 geschwindigkeit = st.number_input("🛻 Geschwindigkeit (km/h)", 60, 120, 80)
-
-zehner_fahrten = [True, True]
-neuner_ruhen = [True, True, True]
 tankpause = st.checkbox("⛽ Tankpause (30 min)?")
 
 if st.button("📦 Berechnen & ETA anzeigen"):
@@ -101,6 +101,9 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         zehner_index = 0
         neuner_index = 0
         used_tank = False
+
+        zehner_fahrten = [True if i < len(zehner_check) else False for i in range(2)]
+        neuner_ruhen = [True if i < len(neuner_check) else False for i in range(3)]
 
         while remaining > 0:
             if we_start and current_time >= we_start and current_time < we_ende:
@@ -138,3 +141,12 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         for eintrag in log:
             st.markdown(eintrag)
         st.success(f"✅ ETA: {current_time.strftime('%A, %H:%M')} ({local_tz.zone})")
+
+        # ➕ Karte anzeigen
+        map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
+        if zwischenstopps:
+            waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
+            map_url += f"&waypoints={waypoints_encoded}"
+
+        st.markdown("### 🗺️ Routenkarte:")
+        st.components.v1.iframe(map_url, height=500)
