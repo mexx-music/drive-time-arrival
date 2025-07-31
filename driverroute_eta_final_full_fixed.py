@@ -168,27 +168,8 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         used_tank = False
         fähre_index = 0
         fähren_eingebaut = []
-# Hilfsfunktion: Minuten in "xhyy"-Format
-def format_minuten(minuten):
-    stunden = minuten // 60
-    rest = minuten % 60
-    return f"{stunden}h{rest:02}"
 
-# Hilfsfunktion: Englischer Wochentag → Deutsch
-# Hilfsfunktion: Englischer Wochentag → Deutsch
-def wochentag_deutsch(dt):
-    tage = {
-        "Monday": "Montag",
-        "Tuesday": "Dienstag",
-        "Wednesday": "Mittwoch",
-        "Thursday": "Donnerstag",
-        "Friday": "Freitag",
-        "Saturday": "Samstag",
-        "Sunday": "Sonntag"
-    }
-    return tage[dt.strftime("%A")]
-    while remaining > 0:
-            # Fähre einbauen (wenn geplant und Zeitpunkt erreicht)
+        while remaining > 0:
             if faehren_anzeigen and fähre_index < len(st.session_state.faehren):
                 f = st.session_state.faehren[fähre_index]
                 f_start = local_tz.localize(datetime.combine(f["datum"], datetime.strptime(f"{f['stunde']}:{f['minute']}", "%H:%M").time()))
@@ -201,33 +182,24 @@ def wochentag_deutsch(dt):
                     fähre_index += 1
                     continue
 
-            # Wochenendruhe aktiv → Zeitsprung + Reset
-            if we_start and we_start <= current_time < we_ende:
+            if we_start and current_time >= we_start and current_time < we_ende:
                 current_time = we_ende
                 zehner_index = 0
                 neuner_index = 0
                 log.append(f"🛌 Wochenruhe von {we_start.strftime('%Y-%m-%d %H:%M')} bis {we_ende.strftime('%Y-%m-%d %H:%M')} – Rücksetzung aktiv")
                 continue
 
-            # Montag 2:00 Uhr = automatische Rücksetzung der 10h/9h-Kontingente
             if current_time.weekday() == 0 and current_time.hour >= 2:
                 zehner_index = 0
                 neuner_index = 0
-                log.append("🔄 Wochenreset: Montag ab 2:00 → 10h/9h zurückgesetzt")
+                log.append(f"🔄 Wochenreset: Montag ab 2:00 → 10h/9h zurückgesetzt")
 
-            # Lenkzeitlogik (10h oder 9h)
-            if zehner_index < 2 and zehner_fahrten[zehner_index]:
-                max_drive = 600  # 10h
-            else:
-                max_drive = 540  # 9h
-
+            max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
             gefahren = min(remaining, max_drive)
-            pausen = (gefahren // 270) * 45  # nach je 4:30h → 45 min Pause
-
+            pausen = math.floor(gefahren / 270) * 45
             if tankpause and not used_tank:
                 pausen += 30
                 used_tank = True
-
             ende = current_time + timedelta(minutes=gefahren + pausen)
             log.append(f"📆 {current_time.strftime('%A %H:%M')} → {int(gefahren)} min + {pausen} min Pause → Ende: {ende.strftime('%H:%M')}")
             remaining -= gefahren
@@ -238,55 +210,45 @@ def wochentag_deutsch(dt):
             ruhezeit = 540 if neuner_index < 3 and neuner_ruhen[neuner_index] else 660
             log.append(f"🌙 Ruhe {ruhezeit//60}h → weiter: {(ende + timedelta(minutes=ruhezeit)).strftime('%Y-%m-%d %H:%M')}")
             current_time = ende + timedelta(minutes=ruhezeit)
+            if zehner_index < 2: zehner_index += 1
+            if neuner_index < 3: neuner_index += 1
 
-            if zehner_index < 2:
-                zehner_index += 1
-            if neuner_index < 3:
-                neuner_index += 1
+        st.markdown("## 📋 Fahrplan:")
+        for i, eintrag in enumerate(log):
+            if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag enthält Endzeit
+                time_part = eintrag.split("→ Ende:")[-1].strip()
+                eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
+                st.markdown(eintrag, unsafe_allow_html=True)
+            else:
+                st.markdown(eintrag)
+        verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
+        verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
+        st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
 
-        
-    # 📋 Fahrplan anzeigen
-    st.markdown("## 📋 Fahrplan:")
-    for i, eintrag in enumerate(log):
-        if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag = finale Zeit
-            time_part = eintrag.split("→ Ende:")[-1].strip()
-            eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
-            st.markdown(eintrag, unsafe_allow_html=True)
+        verbleibend_min = verfügbare_woche - total_min
+        if verbleibend_min < 0:
+            überschuss = abs(verbleibend_min)
+            h_m, m_m = divmod(überschuss, 60)
+            st.warning(f"⚠️ Achtung: Wochenlenkzeit überschritten um {h_m} h {m_m} min!")
         else:
-            st.markdown(eintrag)
+            h, m = divmod(verbleibend_min, 60)
+            st.info(f"🧭 Verbleibende Wochenlenkzeit: {h}h {m}min")
 
-    # Restliche Kontingente anzeigen
-    verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
-    verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
-    st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
+        ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
+        letzte_zeit = ende.astimezone(ziel_tz)
 
-    # Wochenlenkzeit
-    verbleibend_min = verfügbare_woche - total_min
-    if verbleibend_min < 0:
-        überschuss = abs(verbleibend_min)
-        h_m, m_m = divmod(überschuss, 60)
-        st.warning(f"⚠️ Achtung: Wochenlenkzeit überschritten um {h_m} h {m_m} min!")
-    else:
-        h, m = divmod(verbleibend_min, 60)
-        st.info(f"🧭 Verbleibende Wochenlenkzeit: {h}h {m}min")
+        st.markdown(f"""
+        <h2 style='text-align: center; color: green;'>
+        ✅ <u>Ankunftszeit:</u><br>
+        🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
+        ({ziel_tz.zone})
+        </h2>
+        """, unsafe_allow_html=True)         
 
-    # Zielzeitzone + finale Ankunft
-    ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-    letzte_zeit = ende.astimezone(ziel_tz)
+        map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
+        if zwischenstopps:
+            waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
+            map_url += f"&waypoints={waypoints_encoded}"
 
-    st.markdown(f"""
-    <h2 style='text-align: center; color: green;'>
-    ✅ <u>Ankunftszeit:</u><br>
-    🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
-    ({ziel_tz.zone})
-    </h2>
-    """, unsafe_allow_html=True)
-
-    # Kartenanzeige
-    map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
-    if zwischenstopps:
-        waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
-        map_url += f"&waypoints={waypoints_encoded}"
-
-    st.markdown("### 🗺️ Routenkarte:")
-    st.components.v1.iframe(map_url, height=500)
+        st.markdown("### 🗺️ Routenkarte:")
+        st.components.v1.iframe(map_url, height=500)
