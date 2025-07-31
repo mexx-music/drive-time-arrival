@@ -1,96 +1,102 @@
-
 import streamlit as st
+import requests
 from datetime import datetime, timedelta
-import googlemaps
 import pytz
-import math
 
-# API-Key einfügen
-GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
-gmaps = googlemaps.Client(key=GOOGLE_API_KEY)
+# ===== API-Schlüssel & Einstellungen =====
+GOOGLE_API_KEY = "GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g""  # Dein echter Key hier einsetzen
 
-# Konfiguration
-st.set_page_config(page_title="DriverRoute ETA", layout="centered")
-st.title("📦 DriverRoute ETA – Ankunftszeit mit Lenkzeit-Regeln")
+# ===== Funktion: Strecke & Fahrzeit via Google Directions API =====
+def get_route_info(origin, destination):
+    url = f"https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&key={GOOGLE_API_KEY}"
+    response = requests.get(url)
+    data = response.json()
+    if data["status"] == "OK":
+        route = data["routes"][0]["legs"][0]
+        distance_km = route["distance"]["value"] / 1000  # in km
+        duration_min = route["duration"]["value"] / 60    # in Minuten
+        return distance_km, duration_min
+    else:
+        return None, None
 
-# Eingabe: Startzeit (mit 12h AM/PM Auswahl)
-col1, col2 = st.columns(2)
-with col1:
-    start_time_input = st.time_input("Startzeit", value=datetime.now().time())
-with col2:
-    am_pm = st.radio("AM/PM", ["AM", "PM"], horizontal=True)
-    hour = start_time_input.hour
+# ===== Funktion: Uhrzeit AM/PM zu 24h =====
+def convert_to_24h(hour, minute, am_pm):
     if am_pm == "PM" and hour < 12:
         hour += 12
-    elif am_pm == "AM" and hour == 12:
+    if am_pm == "AM" and hour == 12:
         hour = 0
-start_time = datetime.combine(datetime.today(), datetime.min.time()).replace(hour=hour, minute=start_time_input.minute)
+    return hour, minute
 
-# Start & Ziel
-start = st.text_input("Startort", "Volos, Griechenland")
-ziel = st.text_input("Zielort", "Saarlouis, Deutschland")
+# ===== UI Eingabe =====
+st.title("🚛 DriverRoute ETA mit Lenkzeit-Regeln")
 
-# Optionen
-st.markdown("### Fahrzeit-Optionen")
-left, right = st.columns(2)
-with left:
-    verf_10h = st.slider("10h-Fahrten (pro Woche)", 0, 2, 2)
-with right:
-    verf_9h_pause = st.slider("9h-Tagesruhe (pro Woche)", 0, 3, 3)
+col1, col2 = st.columns(2)
+with col1:
+    hour = st.selectbox("Startzeit (Stunde)", list(range(1, 13)), index=9)
+with col2:
+    minute = st.selectbox("Startzeit (Minuten)", list(range(0, 60, 5)), index=8)
 
-tankpause = st.checkbox("30min Tankpause erforderlich", value=False)
-verbleibende_lenkzeit = st.slider("Verbleibende Lenkzeit heute (Minuten)", 0, 540, 300)
+am_pm = st.radio("AM oder PM", ["AM", "PM"], horizontal=True)
 
-# Button
-if st.button("📦 Route analysieren & ETA berechnen"):
-    route = gmaps.directions(start, ziel, mode="driving")
-    if route:
-        duration = route[0]['legs'][0]['duration']['value'] / 60  # in Minuten
-        polyline = route[0]['overview_polyline']['points']
-        st.success(f"🕰️ Fahrzeit (Google): {int(duration)} Minuten")
+startort = st.text_input("Startort", "Volos, Griechenland")
+zielort = st.text_input("Zielort", "Saarlouis, Deutschland")
 
-        verbleibend = duration
-        tagesplan = []
-        aktueller_zeitpunkt = start_time
-        lenkzeit_heute = verbleibende_lenkzeit
-        zeitzone = pytz.timezone("Europe/Vienna")  # optional: dynamisch per Geoposition
-        aktueller_zeitpunkt = zeitzone.localize(aktueller_zeitpunkt)
+st.subheader("Fahrzeit-Optionen")
+zehn_stunden = st.slider("10h-Fahrten (pro Woche)", 0, 2, 2)
+neun_stunden = st.slider("9h-Ruhepausen (pro Woche)", 0, 3, 3)
+tankpause = st.checkbox("30min Tankpause erforderlich")
+verbleibende_min = st.slider("Verbleibende Lenkzeit heute (Minuten)", 0, 540, 300)
 
-        while verbleibend > 0:
-            if lenkzeit_heute > 0:
-                fahrzeit = min(lenkzeit_heute, 540, verbleibend)
-                verbleibend -= fahrzeit
-                aktueller_zeitpunkt += timedelta(minutes=fahrzeit)
-                tagesplan.append(("Fahrt", fahrzeit, aktueller_zeitpunkt.strftime("%a %H:%M")))
-                lenkzeit_heute = 0
-            else:
-                if verf_10h > 0:
-                    lenkzeit_heute = 600
-                    verf_10h -= 1
-                else:
-                    lenkzeit_heute = 540
-                ruhezeit = 11 if verf_9h_pause <= 0 else 9
-                if verf_9h_pause > 0:
-                    verf_9h_pause -= 1
-                aktueller_zeitpunkt += timedelta(hours=ruhezeit)
-                tagesplan.append(("Pause", ruhezeit * 60, aktueller_zeitpunkt.strftime("%a %H:%M")))
+# ===== Startzeit berechnen =====
+start_hour, start_minute = convert_to_24h(hour, minute, am_pm)
+tz = pytz.timezone("Europe/Vienna")
+startzeit = tz.localize(datetime.now().replace(hour=start_hour, minute=start_minute, second=0, microsecond=0))
 
-        eta = aktueller_zeitpunkt
-        st.success(f"📅 ETA (mit allen Regeln): **{eta.strftime('%A, %d.%m.%Y – %H:%M Uhr')}**")
+# ===== Route abrufen =====
+if st.button("Route analysieren & ETA berechnen"):
+    distance_km, raw_duration = get_route_info(startort, zielort)
+    if distance_km:
+        st.success(f"🛣️ Strecke: {round(distance_km,1)} km – theoretische Fahrtzeit: {int(raw_duration)} min")
 
-        # Kalender / Tagesübersicht
-        st.markdown("### Tagesübersicht")
-        for eintrag in tagesplan:
-            st.write(f"🟩 {eintrag[0]}: {int(eintrag[1])} Minuten → {eintrag[2]}")
+        # ===== Lenkzeitlogik anwenden =====
+        real_fahrzeit = int(raw_duration)
+        restzeit = verbleibende_min
+        tageslimit = 540
+        fahrplan = []
+        pause_standard = 45
+        tankpause_dauer = 30 if tankpause else 0
+        tag = 0
 
-        def zeige_google_karte_mit_polyline(polyline_str):
-            base_url = "https://maps.googleapis.com/maps/api/staticmap?"
-            size = "640x400"
-            path = f"path=enc:{polyline_str}"
-            map_url = f"{base_url}size={size}&{path}&key={GOOGLE_API_KEY}"
-            st.image(map_url, caption="🗺️ Route-Vorschau (echte Straßenführung)")
+        aktuelle_zeit = startzeit
 
-        zeige_google_karte_mit_polyline(polyline)
+        while real_fahrzeit > 0:
+            tag += 1
+            max_fahrt = 600 if zehn_stunden > 0 else 540
+            heute_fahrt = min(real_fahrzeit, restzeit if tag == 1 else max_fahrt)
+
+            # Pausen einplanen
+            pause = pause_standard + (tankpause_dauer if tag == 1 and tankpause else 0)
+            real_fahrzeit -= heute_fahrt
+            restzeit = 0
+
+            ende = aktuelle_zeit + timedelta(minutes=heute_fahrt + pause)
+            fahrplan.append(f"📅 Tag {tag}: Start: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')} – Fahrt: {heute_fahrt} min + Pause: {pause} min → Ende: {ende.strftime('%H:%M')}")
+            aktuelle_zeit = ende + timedelta(hours=9 if neun_stunden > 0 else 11)
+
+            if zehn_stunden > 0:
+                zehn_stunden -= 1
+            if neun_stunden > 0:
+                neun_stunden -= 1
+
+        eta = aktuelle_zeit.strftime("%A, %H:%M Uhr (%Z)")
+        st.success(f"✅ ETA am Ziel: {eta}")
+
+        st.markdown("### 📋 Fahrplan:")
+        for eintrag in fahrplan:
+            st.write(eintrag)
+
+        # ===== Karte anzeigen =====
+        map_url = f"https://www.google.com/maps/dir/?api=1&origin={startort}&destination={zielort}"
+        st.markdown(f"[🗺️ Route in Google Maps öffnen]({map_url})", unsafe_allow_html=True)
     else:
-        st.error("❌ Route konnte nicht berechnet werden.")
-
+        st.error("⚠️ Route konnte nicht berechnet werden. Bitte Eingaben prüfen.")
