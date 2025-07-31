@@ -175,6 +175,11 @@ if st.button("📦 Berechnen & ETA anzeigen"):
 
         verbleibend_min = max(0, verfügbare_woche - total_min)
         h, m = divmod(verbleibend_min, 60)
+        # Warnung bei negativer Wochenlenkzeit
+if verfügbare_woche - total_min < 0:
+    überschuss = abs(verfügbare_woche - total_min)
+    h_m, m_m = divmod(überschuss, 60)
+    st.warning(f"⚠️ Achtung: Wochenlenkzeit überschritten um {h_m} h {m_m} min!")
         st.info(f"🧭 Verbleibende Wochenlenkzeit: {h} h {m} min")
 
         st.markdown(f"""
