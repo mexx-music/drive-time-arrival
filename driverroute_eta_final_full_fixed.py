@@ -244,48 +244,49 @@ def wochentag_deutsch(dt):
             if neuner_index < 3:
                 neuner_index += 1
 
-        # Fahrplan anzeigen
-st.markdown("## 📋 Fahrplan:")
-for i, eintrag in enumerate(log):
-if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag = finale Zeit
-time_part = eintrag.split("→ Ende:")[-1].strip()
-eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
-st.markdown(eintrag, unsafe_allow_html=True)
-            else:
-                st.markdown(eintrag)
-
-        # Restliche Kontingente anzeigen
-        verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
-        verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
-        st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
-
-        # Wochenlenkzeit
-        verbleibend_min = verfügbare_woche - total_min
-        if verbleibend_min < 0:
-            überschuss = abs(verbleibend_min)
-            h_m, m_m = divmod(überschuss, 60)
-            st.warning(f"⚠️ Achtung: Wochenlenkzeit überschritten um {h_m} h {m_m} min!")
+        
+    # 📋 Fahrplan anzeigen
+    st.markdown("## 📋 Fahrplan:")
+    for i, eintrag in enumerate(log):
+        if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag = finale Zeit
+            time_part = eintrag.split("→ Ende:")[-1].strip()
+            eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
+            st.markdown(eintrag, unsafe_allow_html=True)
         else:
-            h, m = divmod(verbleibend_min, 60)
-            st.info(f"🧭 Verbleibende Wochenlenkzeit: {h}h {m}min")
+            st.markdown(eintrag)
 
-        # Zielzeitzone + finale Ankunft
-        ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-        letzte_zeit = ende.astimezone(ziel_tz)
+    # Restliche Kontingente anzeigen
+    verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
+    verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
+    st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
 
-        st.markdown(f"""
-        <h2 style='text-align: center; color: green;'>
-        ✅ <u>Ankunftszeit:</u><br>
-        🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
-        ({ziel_tz.zone})
-        </h2>
-        """, unsafe_allow_html=True)
+    # Wochenlenkzeit
+    verbleibend_min = verfügbare_woche - total_min
+    if verbleibend_min < 0:
+        überschuss = abs(verbleibend_min)
+        h_m, m_m = divmod(überschuss, 60)
+        st.warning(f"⚠️ Achtung: Wochenlenkzeit überschritten um {h_m} h {m_m} min!")
+    else:
+        h, m = divmod(verbleibend_min, 60)
+        st.info(f"🧭 Verbleibende Wochenlenkzeit: {h}h {m}min")
 
-        # Kartenanzeige
-        map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
-        if zwischenstopps:
-            waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
-            map_url += f"&waypoints={waypoints_encoded}"
+    # Zielzeitzone + finale Ankunft
+    ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
+    letzte_zeit = ende.astimezone(ziel_tz)
 
-        st.markdown("### 🗺️ Routenkarte:")
-        st.components.v1.iframe(map_url, height=500)
+    st.markdown(f"""
+    <h2 style='text-align: center; color: green;'>
+    ✅ <u>Ankunftszeit:</u><br>
+    🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
+    ({ziel_tz.zone})
+    </h2>
+    """, unsafe_allow_html=True)
+
+    # Kartenanzeige
+    map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
+    if zwischenstopps:
+        waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
+        map_url += f"&waypoints={waypoints_encoded}"
+
+    st.markdown("### 🗺️ Routenkarte:")
+    st.components.v1.iframe(map_url, height=500)
