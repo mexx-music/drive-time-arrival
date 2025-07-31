@@ -180,8 +180,7 @@ def wochentag_deutsch(dt):
         "Monday": "Montag", "Tuesday": "Dienstag", "Wednesday": "Mittwoch",
         "Thursday": "Donnerstag", "Friday": "Freitag",
         "Saturday": "Samstag", "Sunday": "Sonntag"
-    }
-            return tage[dt.strftime("%A")]
+         return tage[dt.strftime("%A")]
 
         while remaining > 0:
             # Fähre einbauen (wenn geplant und Zeitpunkt erreicht)
