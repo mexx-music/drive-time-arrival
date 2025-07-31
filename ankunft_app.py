@@ -1,24 +1,28 @@
 import streamlit as st
+import datetime
 
-st.subheader("🕓 Uhrzeit auswählen über Zahlenkreis")
+st.title("🕰️ Uhrzeit der Abfahrt eingeben")
 
-# Zustand merken
+# Uhrzeit-Voreinstellung
 if "selected_hour" not in st.session_state:
-    st.session_state.selected_hour = 4
+    st.session_state.selected_hour = 8
 if "selected_minute" not in st.session_state:
     st.session_state.selected_minute = 0
 
-st.markdown("### ⏰ Stunde wählen:")
-cols_hour = st.columns(6)
-for i in range(24):
-    if cols_hour[i % 6].button(f"{i:02d}", key=f"hour_{i}"):
-        st.session_state.selected_hour = i
+# 🕑 Stunde wählen
+st.subheader("⏰ Stunde wählen:")
+cols_hr = st.columns(6)
+for h in range(24):
+    if cols_hr[h % 6].button(f"{h:02d}", key=f"hour_{h}"):
+        st.session_state.selected_hour = h
 
-st.markdown("### 🕧 Minute wählen:")
-cols_min = st.columns(6)
+# 🕗 Minute wählen
+st.subheader("🕓 Minute wählen:")
+cols_min = st.columns(12)
 for m in range(0, 60, 5):
     if cols_min[m // 5].button(f"{m:02d}", key=f"min_{m}"):
         st.session_state.selected_minute = m
 
-# Anzeige
-st.markdown(f"## ✅ Gewählte Uhrzeit: {st.session_state.selected_hour:02d}:{st.session_state.selected_minute:02d}")
+# Ergebnis anzeigen
+gewählte_zeit = datetime.time(st.session_state.selected_hour, st.session_state.selected_minute)
+st.success(f"⏱️ Gewählte Zeit: {gewählte_zeit.strftime('%H:%M')}")
