@@ -28,7 +28,7 @@ def get_local_time(address):
     return datetime.now(tz), tz
 
 st.set_page_config(page_title="DriverRoute ETA – Vollversion", layout="centered")
-st.title("🚛 DriverRoute ETA – Fahrzeit, Kästchen & Karte")
+st.title("🚛 DriverRoute ETA – inkl. Fahrzeit, Karte, Kästchen & ETA")
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -62,7 +62,7 @@ else:
     abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
     start_time = local_tz.localize(abfahrt_time)
 
-# Kästchen statt Auswahllisten
+# Kästchen für 10h- und 9h-Regel
 st.markdown("### 🕓 Wöchentliche Lenkzeit-Ausnahmen")
 
 col_a, col_b = st.columns(2)
@@ -149,22 +149,30 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if zehner_index < 2: zehner_index += 1
             if neuner_index < 3: neuner_index += 1
 
+        # Fahrplan anzeigen
         st.markdown("## 📋 Fahrplan:")
         for eintrag in log:
             st.markdown(eintrag)
-        st.markdown("## 📋 Fahrplan:")
-for eintrag in log:
-    st.markdown(eintrag)
 
-verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
-verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
-st.info(f"🧮 Noch übrig: {verbl_10h}× 10h-Fahrt, {verbl_9h}× 9h-Ruhepause")
+        # Restliche Kästchen anzeigen
+        verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
+        verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
+        st.info(f"🧮 Noch übrig: {verbl_10h}× 10h-Fahrt, {verbl_9h}× 9h-Ruhepause")
 
-# 🟢 Groß, grün, korrektes ETA-Ende anzeigen
-st.markdown(f"""
-<h2 style='text-align: center; color: green;'>
-✅ <u>Geplante Ankunft:</u><br>
-🕓 <b>{ende.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
-({local_tz.zone})
-</h2>
-""", unsafe_allow_html=True)
+        # 🟢 Groß, grün, korrektes ETA-Ende anzeigen
+        st.markdown(f"""
+        <h2 style='text-align: center; color: green;'>
+        ✅ <u>Geplante Ankunft:</u><br>
+        🕓 <b>{ende.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
+        ({local_tz.zone})
+        </h2>
+        """, unsafe_allow_html=True)
+
+        # Karte anzeigen
+        map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
+        if zwischenstopps:
+            waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
+            map_url += f"&waypoints={waypoints_encoded}"
+
+        st.markdown("### 🗺️ Routenkarte:")
+        st.components.v1.iframe(map_url, height=500)
