@@ -245,12 +245,12 @@ def wochentag_deutsch(dt):
                 neuner_index += 1
 
         # Fahrplan anzeigen
-        st.markdown("## 📋 Fahrplan:")
-        for i, eintrag in enumerate(log):
-            if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag = finale Zeit
-                time_part = eintrag.split("→ Ende:")[-1].strip()
-                eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
-                st.markdown(eintrag, unsafe_allow_html=True)
+st.markdown("## 📋 Fahrplan:")
+for i, eintrag in enumerate(log):
+if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag = finale Zeit
+time_part = eintrag.split("→ Ende:")[-1].strip()
+eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
+st.markdown(eintrag, unsafe_allow_html=True)
             else:
                 st.markdown(eintrag)
 
