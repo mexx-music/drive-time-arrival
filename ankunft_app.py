@@ -1,302 +1,96 @@
 
 import streamlit as st
-import requests
-import urllib.parse
 from datetime import datetime, timedelta
+import googlemaps
 import pytz
-import time
+import math
 
+# API-Key einfügen
 GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
+gmaps = googlemaps.Client(key=GOOGLE_API_KEY)
 
-def get_timezone_for_latlng(lat, lng):
-    timestamp = int(time.time())
-    tz_url = f"https://maps.googleapis.com/maps/api/timezone/json?location={lat},{lng}&timestamp={timestamp}&key={GOOGLE_API_KEY}"
-    tz_data = requests.get(tz_url).json()
-    if tz_data["status"] == "OK":
-        return tz_data["timeZoneId"]
-    else:
-        return "Europe/Vienna"
-
-def get_timezone_for_address(address):
-    geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
-    geo_data = requests.get(geocode_url).json()
-    if geo_data["status"] == "OK":
-        lat = geo_data["results"][0]["geometry"]["location"]["lat"]
-        lng = geo_data["results"][0]["geometry"]["location"]["lng"]
-        return get_timezone_for_latlng(lat, lng)
-    return "Europe/Vienna"
-
-def get_local_time_for_address(address):
-    try:
-        tz_str = get_timezone_for_address(address)
-        tz = pytz.timezone(tz_str)
-        return datetime.now(tz), tz
-    except:
-        return datetime.now(), pytz.timezone("Europe/Vienna")
-
+# Konfiguration
 st.set_page_config(page_title="DriverRoute ETA", layout="centered")
-st.title("🚛 DriverRoute ETA – inkl. Lenkzeit & echte Karte")
+st.title("📦 DriverRoute ETA – Ankunftszeit mit Lenkzeit-Regeln")
 
-startort = st.text_input("📍 Startort", "Volos, Griechenland")
-zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
+# Eingabe: Startzeit (mit 12h AM/PM Auswahl)
+col1, col2 = st.columns(2)
+with col1:
+    start_time_input = st.time_input("Startzeit", value=datetime.now().time())
+with col2:
+    am_pm = st.radio("AM/PM", ["AM", "PM"], horizontal=True)
+    hour = start_time_input.hour
+    if am_pm == "PM" and hour < 12:
+        hour += 12
+    elif am_pm == "AM" and hour == 12:
+        hour = 0
+start_time = datetime.combine(datetime.today(), datetime.min.time()).replace(hour=hour, minute=start_time_input.minute)
 
-if "zwischenstopps" not in st.session_state:
-    st.session_state.zwischenstopps = []
+# Start & Ziel
+start = st.text_input("Startort", "Volos, Griechenland")
+ziel = st.text_input("Zielort", "Saarlouis, Deutschland")
 
-if st.button("➕ Zwischenstopp hinzufügen"):
-    if len(st.session_state.zwischenstopps) < 10:
-        st.session_state.zwischenstopps.append("")
+# Optionen
+st.markdown("### Fahrzeit-Optionen")
+left, right = st.columns(2)
+with left:
+    verf_10h = st.slider("10h-Fahrten (pro Woche)", 0, 2, 2)
+with right:
+    verf_9h_pause = st.slider("9h-Tagesruhe (pro Woche)", 0, 3, 3)
 
-for i in range(len(st.session_state.zwischenstopps)):
-    val = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.session_state.zwischenstopps[i] = val
+tankpause = st.checkbox("30min Tankpause erforderlich", value=False)
+verbleibende_lenkzeit = st.slider("Verbleibende Lenkzeit heute (Minuten)", 0, 540, 300)
 
-zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip() != ""]
-
-now_local, local_tz = get_local_time_for_address(startort)
-
-pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
-if pause_aktiv:
-    abfahrt_datum = st.date_input("📅 Datum der Abfahrt nach Pause", value=now_local.date())
-    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
-    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, 0)
-    abfahrt_uhrzeit = datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time()
-    abfahrt_pause = datetime.combine(abfahrt_datum, abfahrt_uhrzeit)
-    start_time = local_tz.localize(abfahrt_pause)
-else:
-    st.subheader("🕒 Geplante Abfahrtszeit")
-    abfahrtsdatum = st.date_input("Datum", value=now_local.date())
-    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
-    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
-    abfahrtszeit = datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time()
-    start_time = local_tz.localize(datetime.combine(abfahrtsdatum, abfahrtszeit))
-
-verbleibend_heute = 0
-if not pause_aktiv:
-    st.subheader("🔄 Verbleibende Lenkzeit HEUTE")
-    col1, col2 = st.columns(2)
-    with col1:
-        lenk_h = st.number_input("Stunden übrig", 0, 10, value=9)
-    with col2:
-        lenk_m = st.number_input("Minuten übrig", 0, 59, value=0)
-    verbleibend_heute = lenk_h * 60 + lenk_m
-
-st.subheader("🛻 Durchschnittliche LKW-Geschwindigkeit")
-geschwindigkeit = st.number_input("Geschwindigkeit (km/h)", min_value=60, max_value=120, value=80)
-
-st.subheader("🟦 10-Stunden-Fahrten (max. 2/Woche)")
-zehner_fahrten = []
-for i in range(2):
-    zehner_fahrten.append(st.checkbox(f"10h-Fahrt nutzen (Tag {i+1})", value=True, key=f"10h_{i}"))
-
-st.subheader("🌙 9-Stunden-Ruhepausen (max. 3/Woche)")
-neuner_ruhen = []
-for i in range(3):
-    neuner_ruhen.append(st.checkbox(f"9h-Ruhe erlaubt (Nacht {i+1})", value=True, key=f"9h_{i}"))
-
-tankpause = st.checkbox("⛽ Zusätzliche Tankpause einplanen (30 min)")
-
-st.subheader("🛌 Wochenruhezeit")
-we_aktiv = st.checkbox("🕓 Wochenendpause aktivieren")
-if we_aktiv:
-    we_typ = st.selectbox("Dauer der Wochenruhezeit", ["24h", "45h", "66h"])
-    we_beginn_datum = st.date_input("📅 Startdatum der Wochenruhezeit", value=now_local.date())
-    we_beginn_stunde = st.number_input("🕓 Start-Stunde", 0, 23, 22)
-    we_beginn_minute = st.number_input("🕧 Start-Minute", 0, 59, 0)
-    we_beginn = datetime.combine(we_beginn_datum, datetime.strptime(f"{we_beginn_stunde}:{we_beginn_minute}", "%H:%M").time())
-    we_beginn = local_tz.localize(we_beginn)
-    we_dauer = {"24h": 1440, "45h": 2700, "66h": 3960}.get(we_typ, 1440)
-    we_ende = we_beginn + timedelta(minutes=we_dauer)
-else:
-    we_beginn = we_ende = None
-
+# Button
 if st.button("📦 Route analysieren & ETA berechnen"):
+    route = gmaps.directions(start, ziel, mode="driving")
+    if route:
+        duration = route[0]['legs'][0]['duration']['value'] / 60  # in Minuten
+        polyline = route[0]['overview_polyline']['points']
+        st.success(f"🕰️ Fahrzeit (Google): {int(duration)} Minuten")
 
-    alle_orte = [startort] + zwischenstopps + [zielort]
-    route_url = "https://maps.googleapis.com/maps/api/directions/json"
-    params = {
-        "origin": alle_orte[0],
-        "destination": alle_orte[-1],
-        "waypoints": "|".join(alle_orte[1:-1]) if len(alle_orte) > 2 else "",
-        "key": GOOGLE_API_KEY
-    }
+        verbleibend = duration
+        tagesplan = []
+        aktueller_zeitpunkt = start_time
+        lenkzeit_heute = verbleibende_lenkzeit
+        zeitzone = pytz.timezone("Europe/Vienna")  # optional: dynamisch per Geoposition
+        aktueller_zeitpunkt = zeitzone.localize(aktueller_zeitpunkt)
 
-    response = requests.get(route_url, params=params)
-    data = response.json()
+        while verbleibend > 0:
+            if lenkzeit_heute > 0:
+                fahrzeit = min(lenkzeit_heute, 540, verbleibend)
+                verbleibend -= fahrzeit
+                aktueller_zeitpunkt += timedelta(minutes=fahrzeit)
+                tagesplan.append(("Fahrt", fahrzeit, aktueller_zeitpunkt.strftime("%a %H:%M")))
+                lenkzeit_heute = 0
+            else:
+                if verf_10h > 0:
+                    lenkzeit_heute = 600
+                    verf_10h -= 1
+                else:
+                    lenkzeit_heute = 540
+                ruhezeit = 11 if verf_9h_pause <= 0 else 9
+                if verf_9h_pause > 0:
+                    verf_9h_pause -= 1
+                aktueller_zeitpunkt += timedelta(hours=ruhezeit)
+                tagesplan.append(("Pause", ruhezeit * 60, aktueller_zeitpunkt.strftime("%a %H:%M")))
 
-    if data["status"] != "OK":
-        st.error("❌ Fehler bei der Routenberechnung.")
-    else:
-        legs = data["routes"][0]["legs"]
-        gesamt_dauer_min = sum(leg["duration"]["value"] for leg in legs) // 60
-        gesamt_distanz_km = sum(leg["distance"]["value"] for leg in legs) / 1000
+        eta = aktueller_zeitpunkt
+        st.success(f"📅 ETA (mit allen Regeln): **{eta.strftime('%A, %d.%m.%Y – %H:%M Uhr')}**")
 
-        if gesamt_dauer_min == 0:
-            gesamt_dauer_min = round(gesamt_distanz_km / geschwindigkeit * 60)
-
-        rest = gesamt_dauer_min
-        tag = 0
-        ankunft = start_time
-        verbleibende_10h = sum(zehner_fahrten)
-        verbleibende_9h = sum(neuner_ruhen)
-
-        while rest > 0:
-            tag += 1
-            heutige_lenkzeit = 540
-            if verbleibende_10h > 0:
-                heutige_lenkzeit = 600
-                verbleibende_10h -= 1
-
-            fahrzeit_heute = min(heutige_lenkzeit, rest)
-            rest -= fahrzeit_heute
-
-            if tag == 1 and tankpause:
-                ankunft += timedelta(minutes=30)
-
-            ankunft += timedelta(minutes=fahrzeit_heute)
-
-            if rest <= 0:
-                break
-
-            ruhezeit = 660
-            if verbleibende_9h > 0:
-                ruhezeit = 540
-                verbleibende_9h -= 1
-            ankunft += timedelta(minutes=ruhezeit)
-
-            if we_aktiv and ankunft >= we_beginn and ankunft < we_ende:
-                ankunft += (we_ende - ankunft)
-
-        st.success(f"🛣️ Strecke: {round(gesamt_distanz_km)} km")
-        st.success(f"⏱️ Fahrzeit (Google): {gesamt_dauer_min} Minuten")
-        st.success(f"📅 ETA (mit allen Regeln): **{ankunft.strftime('%A, %d.%m.%Y – %H:%M')} Uhr**")
+        # Kalender / Tagesübersicht
+        st.markdown("### Tagesübersicht")
+        for eintrag in tagesplan:
+            st.write(f"🟩 {eintrag[0]}: {int(eintrag[1])} Minuten → {eintrag[2]}")
 
         def zeige_google_karte_mit_polyline(polyline_str):
-
-        tagesplan = []
-        rest = gesamt_dauer_min
-        tag = 0
-        ankunft = start_time
-        verbleibende_10h = sum(zehner_fahrten)
-        verbleibende_9h = sum(neuner_ruhen)
-
-        while rest > 0:
-            tag += 1
-            tag_info = {}
-            tag_info["Tag"] = f"Tag {tag}"
-            tag_info["Start"] = ankunft.strftime("%Y-%m-%d %H:%M")
-
-            heutige_lenkzeit = 540
-            if verbleibende_10h > 0:
-                heutige_lenkzeit = 600
-                verbleibende_10h -= 1
-                tag_info["Ereignis"] = "10h-Fahrt"
-            else:
-                tag_info["Ereignis"] = "9h-Fahrt"
-
-            fahrzeit_heute = min(heutige_lenkzeit, rest)
-            rest -= fahrzeit_heute
-            ankunft += timedelta(minutes=fahrzeit_heute)
-
-            tag_info["Fahrzeit"] = f"{fahrzeit_heute // 60}h {fahrzeit_heute % 60}min"
-
-            pause_text = ""
-            if tag == 1 and tankpause:
-                ankunft += timedelta(minutes=30)
-                pause_text = "30min Tankpause"
-
-            ruhezeit = 660
-            if verbleibende_9h > 0:
-                ruhezeit = 540
-                verbleibende_9h -= 1
-                pause_text += " + 9h-Ruhe"
-            else:
-                pause_text += " + 11h-Ruhe"
-
-            if we_aktiv and ankunft >= we_beginn and ankunft < we_ende:
-                dauer = (we_ende - ankunft)
-                ankunft += dauer
-                pause_text += f" + Wochenruhe {we_typ}"
-
-            tag_info["Pause"] = pause_text.strip(" +")
-            tag_info["Tagesende"] = ankunft.strftime("%Y-%m-%d %H:%M")
-
-            tagesplan.append(tag_info)
-
-        import pandas as pd
-        df = pd.DataFrame(tagesplan)
-        st.subheader("🗓️ Tagesübersicht")
-        st.dataframe(df)
-
-        st.subheader("📝 Kurzzusammenfassung")
-        for eintrag in tagesplan:
-            st.markdown(f"- **{eintrag['Tag']}**: {eintrag['Ereignis']}, {eintrag['Fahrzeit']}, Pause: {eintrag['Pause']}")
-:
             base_url = "https://maps.googleapis.com/maps/api/staticmap?"
             size = "640x400"
             path = f"path=enc:{polyline_str}"
             map_url = f"{base_url}size={size}&{path}&key={GOOGLE_API_KEY}"
             st.image(map_url, caption="🗺️ Route-Vorschau (echte Straßenführung)")
 
-        polyline_str = data["routes"][0]["overview_polyline"]["points"]
-        zeige_google_karte_mit_polyline(polyline_str)
-
-        tagesplan = []
-        rest = gesamt_dauer_min
-        tag = 0
-        ankunft = start_time
-        verbleibende_10h = sum(zehner_fahrten)
-        verbleibende_9h = sum(neuner_ruhen)
-
-        while rest > 0:
-            tag += 1
-            tag_info = {}
-            tag_info["Tag"] = f"Tag {tag}"
-            tag_info["Start"] = ankunft.strftime("%Y-%m-%d %H:%M")
-
-            heutige_lenkzeit = 540
-            if verbleibende_10h > 0:
-                heutige_lenkzeit = 600
-                verbleibende_10h -= 1
-                tag_info["Ereignis"] = "10h-Fahrt"
-            else:
-                tag_info["Ereignis"] = "9h-Fahrt"
-
-            fahrzeit_heute = min(heutige_lenkzeit, rest)
-            rest -= fahrzeit_heute
-            ankunft += timedelta(minutes=fahrzeit_heute)
-
-            tag_info["Fahrzeit"] = f"{fahrzeit_heute // 60}h {fahrzeit_heute % 60}min"
-
-            pause_text = ""
-            if tag == 1 and tankpause:
-                ankunft += timedelta(minutes=30)
-                pause_text = "30min Tankpause"
-
-            ruhezeit = 660
-            if verbleibende_9h > 0:
-                ruhezeit = 540
-                verbleibende_9h -= 1
-                pause_text += " + 9h-Ruhe"
-            else:
-                pause_text += " + 11h-Ruhe"
-
-            if we_aktiv and ankunft >= we_beginn and ankunft < we_ende:
-                dauer = (we_ende - ankunft)
-                ankunft += dauer
-                pause_text += f" + Wochenruhe {we_typ}"
-
-            tag_info["Pause"] = pause_text.strip(" +")
-            tag_info["Tagesende"] = ankunft.strftime("%Y-%m-%d %H:%M")
-
-            tagesplan.append(tag_info)
-
-        import pandas as pd
-        df = pd.DataFrame(tagesplan)
-        st.subheader("🗓️ Tagesübersicht")
-        st.dataframe(df)
-
-        st.subheader("📝 Kurzzusammenfassung")
-        for eintrag in tagesplan:
-            st.markdown(f"- **{eintrag['Tag']}**: {eintrag['Ereignis']}, {eintrag['Fahrzeit']}, Pause: {eintrag['Pause']}")
+        zeige_google_karte_mit_polyline(polyline)
+    else:
+        st.error("❌ Route konnte nicht berechnet werden.")
 
