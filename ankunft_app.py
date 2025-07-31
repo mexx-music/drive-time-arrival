@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 import urllib.parse
@@ -34,9 +35,9 @@ def get_local_time_for_address(address):
     except:
         return datetime.now(), pytz.timezone("Europe/Vienna")
 
-st.set_page_config(page_title="DriverRoute Realistische ETA", layout="centered")
+st.set_page_config(page_title="DriverRoute ETA – mit WE-Pause", layout="centered")
 
-st.title("🚛 DriverRoute ETA – mit realistischer LKW-Zeit")
+st.title("🚛 DriverRoute ETA – mit realistischer LKW-Zeit & WE-Pause")
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -97,93 +98,20 @@ for i in range(3):
 
 tankpause = st.checkbox("⛽ Zusätzliche Tankpause einplanen (30 min)")
 
-if st.button("📦 Route analysieren & ETA berechnen"):
-    start_coords = urllib.parse.quote(startort)
-    ziel_coords = urllib.parse.quote(zielort)
-    waypoints = "|".join([urllib.parse.quote(s) for s in zwischenstopps]) if zwischenstopps else ""
-    url = f"https://maps.googleapis.com/maps/api/directions/json?origin={start_coords}&destination={ziel_coords}&key={GOOGLE_API_KEY}"
-    if waypoints:
-        url += f"&waypoints={waypoints}"
+# Wochenendpause hinzufügen
+st.subheader("🛌 Wochenruhezeit")
+we_aktiv = st.checkbox("🕓 Wochenendpause aktivieren")
+if we_aktiv:
+    we_typ = st.selectbox("Dauer der Wochenruhezeit", ["24h", "45h", "66h"])
+    we_beginn_datum = st.date_input("📅 Startdatum der Wochenruhezeit", value=now_local.date())
+    we_beginn_stunde = st.number_input("🕓 Start-Stunde", 0, 23, 22)
+    we_beginn_minute = st.number_input("🕧 Start-Minute", 0, 59, 0)
+    we_beginn = datetime.combine(we_beginn_datum, datetime.strptime(f"{we_beginn_stunde}:{we_beginn_minute}", "%H:%M").time())
+    we_beginn = local_tz.localize(we_beginn)
+    we_dauer = {"24h": 1440, "45h": 2700, "66h": 3960}.get(we_typ, 1440)
+    we_ende = we_beginn + timedelta(minutes=we_dauer)
+else:
+    we_beginn = we_ende = None
 
-    r = requests.get(url)
-    data = r.json()
-
-    if data["status"] != "OK":
-        st.error(f"Fehler: {data['status']}")
-    else:
-        legs = data["routes"][0]["legs"]
-        km = round(sum([leg["distance"]["value"] for leg in legs]) / 1000, 1)
-
-        # Reale LKW-Fahrzeit aus km + Geschwindigkeit
-        total_min = km / geschwindigkeit * 60
-
-        st.success(f"🛣️ Strecke: {km} km ⏱️ Realistische Fahrzeit: {round(total_min)} min mit {geschwindigkeit} km/h")
-
-        remaining_minutes = total_min
-        current_time = start_time
-        log = []
-        used_10h = 0
-        used_9h_rest = 0
-        used_tankpause = False
-        zehner_index = 0
-        neuner_index = 0
-        first_day = True
-
-        while remaining_minutes > 0:
-            tag = current_time.strftime("%A")
-            start_str = current_time.strftime("%Y-%m-%d %H:%M")
-
-            if first_day:
-                if pause_aktiv:
-                    max_drive = 600 if zehner_fahrten[0] else 540
-                    if zehner_fahrten[0]:
-                        used_10h += 1
-                        zehner_index += 1
-                else:
-                    max_drive = verbleibend_heute
-                first_day = False
-            elif zehner_index < len(zehner_fahrten) and zehner_fahrten[zehner_index]:
-                max_drive = 600
-                used_10h += 1
-                zehner_index += 1
-            else:
-                max_drive = 540
-
-            gefahren = min(remaining_minutes, max_drive)
-            pflichtpausen = math.floor(gefahren / 270)
-            pause_min = pflichtpausen * 45
-
-            if tankpause and not used_tankpause:
-                pause_min += 30
-                used_tankpause = True
-
-            tages_ende = current_time + timedelta(minutes=gefahren + pause_min)
-            log.append(f"📆 {tag} – Start: {start_str} → Fahrt: {int(gefahren)} min + Pause: {pause_min} min → Ende: {tages_ende.strftime('%H:%M')}")
-
-            remaining_minutes -= gefahren
-
-            if remaining_minutes > 0:
-                if neuner_index < len(neuner_ruhen) and neuner_ruhen[neuner_index]:
-                    rest = 540
-                    neuner_index += 1
-                    ruhetyp = "9h-Ruhe"
-                else:
-                    rest = 660
-                    ruhetyp = "11h-Ruhe"
-                log.append(f"🌙 Ruhezeit: {ruhetyp} ({rest//60}h) → weiter ab {(tages_ende + timedelta(minutes=rest)).strftime('%Y-%m-%d %H:%M')}")
-                current_time = tages_ende + timedelta(minutes=rest)
-            else:
-                current_time = tages_ende
-
-        eta_ziel = current_time.astimezone(local_tz)
-        st.markdown("## 📋 Fahrplan:")
-        for eintrag in log:
-            st.markdown(eintrag)
-
-        st.success(f"✅ ETA am Ziel: {eta_ziel.strftime('%A, %H:%M Uhr')} ({local_tz.zone})")
-
-        st.subheader("🗺️ Routenkarte")
-        map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={start_coords}&destination={ziel_coords}"
-        if zwischenstopps:
-            map_url += f"&waypoints={'|'.join([urllib.parse.quote(s) for s in zwischenstopps])}"
-        st.components.v1.iframe(map_url, height=450)
+# Dummy Button für ETA
+st.button("📦 Route analysieren & ETA berechnen")
