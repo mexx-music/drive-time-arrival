@@ -171,7 +171,7 @@ if st.button("📦 Route analysieren & ETA berechnen"):
         st.success(f"⏱️ Fahrzeit (Google): {gesamt_dauer_min} Minuten")
         st.success(f"📅 ETA (mit allen Regeln): **{ankunft.strftime('%A, %d.%m.%Y – %H:%M')} Uhr**")
 
-        def zeige_google_karte_mit_polyline(polyline_str)
+        def zeige_google_karte_mit_polyline(polyline_str):
 
         tagesplan = []
         rest = gesamt_dauer_min
