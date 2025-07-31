@@ -180,3 +180,15 @@ if st.button("📦 Route analysieren & ETA berechnen"):
             st.image(map_url, caption="🗺️ Route-Vorschau (Google Static Map)")
 
         zeige_google_karte(alle_orte)
+if st.checkbox("🧪 Karte testen (direkter Link)"):
+    test_orte = [startort] + zwischenstopps + [zielort]
+
+    base_url = "https://maps.googleapis.com/maps/api/staticmap?"
+    size = "640x400"
+    markers = "&".join([f"markers=color:red%7C{urllib.parse.quote(o)}" for o in test_orte])
+    path = f"path=color:blue|weight:5|{urllib.parse.quote('|'.join(test_orte))}"
+    map_url = f"{base_url}size={size}&{markers}&{path}&key={GOOGLE_API_KEY}"
+
+    st.write("🔗 Karten-URL zum Testen (klickbar):")
+    st.markdown(f"[Karte direkt öffnen]({map_url})")
+    st.image(map_url, caption="🗺️ Vorschau der Google Static Map")
