@@ -1,28 +1,24 @@
 import streamlit as st
 
-st.set_page_config(page_title="Uhrzeit Auswahl", layout="centered")
+st.subheader("🕓 Uhrzeit auswählen über Zahlenkreis")
 
-st.markdown("## 🕰️ Uhrzeit der Abfahrt (Touch-freundlich)")
+# Zustand merken
+if "selected_hour" not in st.session_state:
+    st.session_state.selected_hour = 4
+if "selected_minute" not in st.session_state:
+    st.session_state.selected_minute = 0
 
-st.markdown("### Stunde wählen")
-cols_stunde = st.columns(6)
-stunden = list(range(0, 24))
-selected_hour = None
-for i, col in enumerate(cols_stunde):
-    with col:
-        if st.button(f"{stunden[i]:02d}", key=f"h{i}"):
-            selected_hour = stunden[i]
+st.markdown("### ⏰ Stunde wählen:")
+cols_hour = st.columns(6)
+for i in range(24):
+    if cols_hour[i % 6].button(f"{i:02d}", key=f"hour_{i}"):
+        st.session_state.selected_hour = i
 
-st.markdown("### Minute wählen (in 5er-Schritten)")
-cols_minute = st.columns(6)
-minuten = list(range(0, 60, 5))
-selected_minute = None
-for i, col in enumerate(cols_minute):
-    with col:
-        if st.button(f"{minuten[i]:02d}", key=f"m{i}"):
-            selected_minute = minuten[i]
+st.markdown("### 🕧 Minute wählen:")
+cols_min = st.columns(6)
+for m in range(0, 60, 5):
+    if cols_min[m // 5].button(f"{m:02d}", key=f"min_{m}"):
+        st.session_state.selected_minute = m
 
-if selected_hour is not None and selected_minute is not None:
-    st.success(f"🕓 Gewählte Uhrzeit: {selected_hour:02d}:{selected_minute:02d}")
-elif selected_hour is not None or selected_minute is not None:
-    st.info("⏳ Bitte beide Werte auswählen: Stunde und Minute.")
+# Anzeige
+st.markdown(f"## ✅ Gewählte Uhrzeit: {st.session_state.selected_hour:02d}:{st.session_state.selected_minute:02d}")
