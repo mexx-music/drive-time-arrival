@@ -28,7 +28,7 @@ def get_local_time(address):
     return datetime.now(tz), tz
 
 st.set_page_config(page_title="DriverRoute ETA – Vollversion", layout="centered")
-st.title("🚛 DriverRoute ETA – inkl. Karte, Wochenruhe & Lenkzeit-Kästchen")
+st.title("🚛 DriverRoute ETA – Fahrzeit, Kästchen & Karte")
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -62,9 +62,24 @@ else:
     abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
     start_time = local_tz.localize(abfahrt_time)
 
+# Kästchen statt Auswahllisten
 st.markdown("### 🕓 Wöchentliche Lenkzeit-Ausnahmen")
-zehner_check = st.multiselect("✅ Verfügbare 10h-Fahrten (max. 2)", ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"], default=["Montag", "Dienstag"])
-neuner_check = st.multiselect("✅ Verfügbare 9h-Ruhepausen (max. 3)", ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"], default=["Montag", "Dienstag", "Mittwoch"])
+
+col_a, col_b = st.columns(2)
+
+with col_a:
+    st.subheader("10h-Fahrten (max. 2)")
+    zehner_1 = st.checkbox("✅ 10h-Fahrt Nr. 1", value=True, key="10h_1")
+    zehner_2 = st.checkbox("✅ 10h-Fahrt Nr. 2", value=True, key="10h_2")
+
+with col_b:
+    st.subheader("9h-Ruhepausen (max. 3)")
+    neuner_1 = st.checkbox("✅ 9h-Ruhepause Nr. 1", value=True, key="9h_1")
+    neuner_2 = st.checkbox("✅ 9h-Ruhepause Nr. 2", value=True, key="9h_2")
+    neuner_3 = st.checkbox("✅ 9h-Ruhepause Nr. 3", value=True, key="9h_3")
+
+zehner_fahrten = [zehner_1, zehner_2]
+neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
 wochenruhe_manuell = st.checkbox("🛌 Wochenruhepause während Tour manuell einfügen?")
 if wochenruhe_manuell:
@@ -102,9 +117,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         neuner_index = 0
         used_tank = False
 
-        zehner_fahrten = [True if i < len(zehner_check) else False for i in range(2)]
-        neuner_ruhen = [True if i < len(neuner_check) else False for i in range(3)]
-
         while remaining > 0:
             if we_start and current_time >= we_start and current_time < we_ende:
                 current_time = we_ende
@@ -141,6 +153,10 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         for eintrag in log:
             st.markdown(eintrag)
         st.success(f"✅ ETA: {current_time.strftime('%A, %H:%M')} ({local_tz.zone})")
+
+        verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
+        verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
+        st.info(f"🧮 Noch übrig: {verbl_10h}× 10h-Fahrt, {verbl_9h}× 9h-Ruhepause")
 
         # ➕ Karte anzeigen
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
