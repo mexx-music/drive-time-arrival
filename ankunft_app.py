@@ -192,12 +192,18 @@ if st.button("📦 Berechnen & ETA anzeigen"):
 
         # Anzeige der Ankunftszeit in Start- und Zielzeit
            st.markdown(f"""
-            <h2 style='text-align: center; color: green;'>
-        ✅ <u>Geplante Ankunft:</u><br>
-        🕓 <b>{ende.strftime('%A, %d.%m.%Y – %H:%M')}</b> ({local_tz.zone})<br>
-        🕓 <b>{ende_zielzeit.strftime('%A, %d.%m.%Y – %H:%M')}</b> ({ziel_tz.zone})
-           </h2>
-            """, unsafe_allow_html=True)
+               <h2 style='text-align: center; color: green;'>
+            ✅ <u>Geplante Ankunft:</u><br>
+                st.markdown(f"""
+               <h2 style='text-align: center; color: green;'>
+            ✅ <u>Geplante Ankunft:</u><br>
+            🕓 <b>{ende.strftime('%A, %d.%m.%Y – %H:%M')}</b> ({local_tz.zone})<br>
+            🕓 <b>{ende_zielzeit.strftime('%A, %d.%m.%Y – %H:%M')}</b> ({ziel_tz.zone})
+               </h2>
+        """, unsafe_allow_html=True)
+            🕓 <b>{ende_zielzeit.strftime('%A, %d.%m.%Y – %H:%M')}</b> ({ziel_tz.zone})
+               </h2>
+        """, unsafe_allow_html=True)
 
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
