@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 import urllib.parse
@@ -170,7 +171,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         fähren_eingebaut = []
 
         while remaining > 0:
-            # Fährüberfahrten korrekt einfügen
             if faehren_anzeigen and fähre_index < len(st.session_state.faehren):
                 f = st.session_state.faehren[fähre_index]
                 f_start = local_tz.localize(datetime.combine(f["datum"], datetime.strptime(f"{f['stunde']}:{f['minute']}", "%H:%M").time()))
@@ -242,7 +242,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         </h2>
         """, unsafe_allow_html=True)
 
-        # Kartenanzeige
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
