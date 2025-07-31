@@ -184,13 +184,20 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         else:
             h, m = divmod(verbleibend_min, 60)
             st.info(f"🧭 Verbleibende Wochenlenkzeit: {h} h {m} min")
-        st.markdown(f"""
-        <h2 style='text-align: center; color: green;'>
+        # Ziel-Zeitzone automatisch berechnen
+          ziel_für_zeit = zielort if not zwischenstopps else zwischenstopps[-1]
+          ziel_tz_str = get_timezone_for_address(ziel_für_zeit)
+          ziel_tz = pytz.timezone(ziel_tz_str)
+          ende_zielzeit = ende.astimezone(ziel_tz)
+
+        # Anzeige der Ankunftszeit in Start- und Zielzeit
+           st.markdown(f"""
+            <h2 style='text-align: center; color: green;'>
         ✅ <u>Geplante Ankunft:</u><br>
-        🕓 <b>{ende.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
-        ({local_tz.zone})
-        </h2>
-        """, unsafe_allow_html=True)
+        🕓 <b>{ende.strftime('%A, %d.%m.%Y – %H:%M')}</b> ({local_tz.zone})<br>
+        🕓 <b>{ende_zielzeit.strftime('%A, %d.%m.%Y – %H:%M')}</b> ({ziel_tz.zone})
+           </h2>
+            """, unsafe_allow_html=True)
 
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
