@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import pytz
 
 # ===== API-Schlüssel & Einstellungen =====
-GOOGLE_API_KEY = "GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g""  # Dein echter Key hier einsetzen
+GOOGLE_API_KEY = "GOOGLE_API_KEY = "GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"  # Dein echter Key hier einsetzen
 
 # ===== Funktion: Strecke & Fahrzeit via Google Directions API =====
 def get_route_info(origin, destination):
