@@ -152,17 +152,19 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         st.markdown("## 📋 Fahrplan:")
         for eintrag in log:
             st.markdown(eintrag)
-        st.success(f"✅ ETA: {current_time.strftime('%A, %H:%M')} ({local_tz.zone})")
+        st.markdown("## 📋 Fahrplan:")
+for eintrag in log:
+    st.markdown(eintrag)
 
-        verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
-        verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
-        st.info(f"🧮 Noch übrig: {verbl_10h}× 10h-Fahrt, {verbl_9h}× 9h-Ruhepause")
+verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
+verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
+st.info(f"🧮 Noch übrig: {verbl_10h}× 10h-Fahrt, {verbl_9h}× 9h-Ruhepause")
 
-        # ➕ Karte anzeigen
-        map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
-        if zwischenstopps:
-            waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
-            map_url += f"&waypoints={waypoints_encoded}"
-
-        st.markdown("### 🗺️ Routenkarte:")
-        st.components.v1.iframe(map_url, height=500)
+# 🟢 Groß, grün, korrektes ETA-Ende anzeigen
+st.markdown(f"""
+<h2 style='text-align: center; color: green;'>
+✅ <u>Geplante Ankunft:</u><br>
+🕓 <b>{ende.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
+({local_tz.zone})
+</h2>
+""", unsafe_allow_html=True)
