@@ -3,23 +3,23 @@ import requests
 from datetime import datetime, timedelta
 import pytz
 
-# ===== API-Schlüssel & Einstellungen =====
-GOOGLE_API_KEY = "GOOGLE_API_KEY = "GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
+# ✅ Dein funktionierender Google API Key
+GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
 
-# ===== Funktion: Strecke & Fahrzeit via Google Directions API =====
+# 🌍 Funktion zur Streckenabfrage
 def get_route_info(origin, destination):
     url = f"https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&key={GOOGLE_API_KEY}"
     response = requests.get(url)
     data = response.json()
     if data["status"] == "OK":
         route = data["routes"][0]["legs"][0]
-        distance_km = route["distance"]["value"] / 1000  # in km
-        duration_min = route["duration"]["value"] / 60    # in Minuten
+        distance_km = route["distance"]["value"] / 1000
+        duration_min = route["duration"]["value"] / 60
         return distance_km, duration_min
     else:
         return None, None
 
-# ===== Funktion: Uhrzeit AM/PM zu 24h =====
+# 🕓 AM/PM → 24h Format
 def convert_to_24h(hour, minute, am_pm):
     if am_pm == "PM" and hour < 12:
         hour += 12
@@ -27,7 +27,7 @@ def convert_to_24h(hour, minute, am_pm):
         hour = 0
     return hour, minute
 
-# ===== UI Eingabe =====
+# 🎛️ Benutzeroberfläche
 st.title("🚛 DriverRoute ETA mit Lenkzeit-Regeln")
 
 col1, col2 = st.columns(2)
@@ -47,18 +47,17 @@ neun_stunden = st.slider("9h-Ruhepausen (pro Woche)", 0, 3, 3)
 tankpause = st.checkbox("30min Tankpause erforderlich")
 verbleibende_min = st.slider("Verbleibende Lenkzeit heute (Minuten)", 0, 540, 300)
 
-# ===== Startzeit berechnen =====
+# 🕰️ Startzeit setzen
 start_hour, start_minute = convert_to_24h(hour, minute, am_pm)
 tz = pytz.timezone("Europe/Vienna")
 startzeit = tz.localize(datetime.now().replace(hour=start_hour, minute=start_minute, second=0, microsecond=0))
 
-# ===== Route abrufen =====
+# ▶️ Start-Button
 if st.button("Route analysieren & ETA berechnen"):
     distance_km, raw_duration = get_route_info(startort, zielort)
     if distance_km:
         st.success(f"🛣️ Strecke: {round(distance_km,1)} km – theoretische Fahrtzeit: {int(raw_duration)} min")
 
-        # ===== Lenkzeitlogik anwenden =====
         real_fahrzeit = int(raw_duration)
         restzeit = verbleibende_min
         tageslimit = 540
@@ -66,23 +65,18 @@ if st.button("Route analysieren & ETA berechnen"):
         pause_standard = 45
         tankpause_dauer = 30 if tankpause else 0
         tag = 0
-
         aktuelle_zeit = startzeit
 
         while real_fahrzeit > 0:
             tag += 1
             max_fahrt = 600 if zehn_stunden > 0 else 540
             heute_fahrt = min(real_fahrzeit, restzeit if tag == 1 else max_fahrt)
-
-            # Pausen einplanen
             pause = pause_standard + (tankpause_dauer if tag == 1 and tankpause else 0)
             real_fahrzeit -= heute_fahrt
             restzeit = 0
-
             ende = aktuelle_zeit + timedelta(minutes=heute_fahrt + pause)
             fahrplan.append(f"📅 Tag {tag}: Start: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')} – Fahrt: {heute_fahrt} min + Pause: {pause} min → Ende: {ende.strftime('%H:%M')}")
             aktuelle_zeit = ende + timedelta(hours=9 if neun_stunden > 0 else 11)
-
             if zehn_stunden > 0:
                 zehn_stunden -= 1
             if neun_stunden > 0:
@@ -95,7 +89,7 @@ if st.button("Route analysieren & ETA berechnen"):
         for eintrag in fahrplan:
             st.write(eintrag)
 
-        # ===== Karte anzeigen =====
+        # 🗺️ Karte
         map_url = f"https://www.google.com/maps/dir/?api=1&origin={startort}&destination={zielort}"
         st.markdown(f"[🗺️ Route in Google Maps öffnen]({map_url})", unsafe_allow_html=True)
     else:
