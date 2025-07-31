@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 import urllib.parse
@@ -215,9 +214,13 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if neuner_index < 3: neuner_index += 1
 
         st.markdown("## 📋 Fahrplan:")
-        for eintrag in log:
-            st.markdown(eintrag)
-
+        for i, eintrag in enumerate(log):
+            if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag enthält Endzeit
+                time_part = eintrag.split("→ Ende:")[-1].strip()
+                eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
+                st.markdown(eintrag, unsafe_allow_html=True)
+            else:
+                st.markdown(eintrag)
         verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
         verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
         st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
