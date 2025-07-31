@@ -27,8 +27,17 @@ def get_local_time(address):
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
 
-st.set_page_config(page_title="DriverRoute ETA – Vollversion", layout="centered")
-st.title("🚛 DriverRoute ETA – inkl. Fahrzeit, Karte, Kästchen & ETA")
+st.set_page_config(page_title="DriverRoute ETA – Wochenstunden", layout="centered")
+st.title("🚛 DriverRoute ETA – mit Wochenlenkzeit")
+
+# Wochenlenkzeit auswählen
+st.markdown("### 🧭 Wochenlenkzeit festlegen")
+vorgabe = st.radio("Wie viele Wochenlenkzeit stehen noch zur Verfügung?", ["Voll (56h)", "Manuell eingeben"], index=0)
+
+if vorgabe == "Voll (56h)":
+    verfügbare_woche = 3360  # 56h in Minuten
+else:
+    verfügbare_woche = st.number_input("⏱️ Eigene Eingabe (in Minuten)", min_value=0, max_value=3360, value=1200)
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -66,12 +75,10 @@ else:
 st.markdown("### 🕓 Wöchentliche Lenkzeit-Ausnahmen")
 
 col_a, col_b = st.columns(2)
-
 with col_a:
     st.subheader("10h-Fahrten (max. 2)")
     zehner_1 = st.checkbox("✅ 10h-Fahrt Nr. 1", value=True, key="10h_1")
     zehner_2 = st.checkbox("✅ 10h-Fahrt Nr. 2", value=True, key="10h_2")
-
 with col_b:
     st.subheader("9h-Ruhepausen (max. 3)")
     neuner_1 = st.checkbox("✅ 9h-Ruhepause Nr. 1", value=True, key="9h_1")
@@ -149,17 +156,18 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if zehner_index < 2: zehner_index += 1
             if neuner_index < 3: neuner_index += 1
 
-        # Fahrplan anzeigen
         st.markdown("## 📋 Fahrplan:")
         for eintrag in log:
             st.markdown(eintrag)
 
-        # Restliche Kästchen anzeigen
         verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
         verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
         st.info(f"🧮 Noch übrig: {verbl_10h}× 10h-Fahrt, {verbl_9h}× 9h-Ruhepause")
 
-        # 🟢 Groß, grün, korrektes ETA-Ende anzeigen
+        verbleibend_min = max(0, verfügbare_woche - total_min)
+        h, m = divmod(verbleibend_min, 60)
+        st.info(f"🧭 Verbleibende Wochenlenkzeit: {h} h {m} min")
+
         st.markdown(f"""
         <h2 style='text-align: center; color: green;'>
         ✅ <u>Geplante Ankunft:</u><br>
@@ -168,7 +176,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         </h2>
         """, unsafe_allow_html=True)
 
-        # Karte anzeigen
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
