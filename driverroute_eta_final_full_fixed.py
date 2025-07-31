@@ -235,15 +235,15 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             st.info(f"🧭 Verbleibende Wochenlenkzeit: {h}h {m}min")
 
         ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-        ende_zielzeit = current_time.astimezone(ziel_tz)
+        letzte_zeit = ende.astimezone(ziel_tz)
 
         st.markdown(f"""
         <h2 style='text-align: center; color: green;'>
         ✅ <u>Ankunftszeit:</u><br>
-        🕓 <b>{ende_zielzeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
+        🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
         ({ziel_tz.zone})
         </h2>
-        """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)         
 
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
