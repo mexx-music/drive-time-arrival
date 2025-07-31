@@ -171,7 +171,67 @@ if st.button("📦 Route analysieren & ETA berechnen"):
         st.success(f"⏱️ Fahrzeit (Google): {gesamt_dauer_min} Minuten")
         st.success(f"📅 ETA (mit allen Regeln): **{ankunft.strftime('%A, %d.%m.%Y – %H:%M')} Uhr**")
 
-        def zeige_google_karte_mit_polyline(polyline_str):
+        def zeige_google_karte_mit_polyline(polyline_str)
+
+        tagesplan = []
+        rest = gesamt_dauer_min
+        tag = 0
+        ankunft = start_time
+        verbleibende_10h = sum(zehner_fahrten)
+        verbleibende_9h = sum(neuner_ruhen)
+
+        while rest > 0:
+            tag += 1
+            tag_info = {}
+            tag_info["Tag"] = f"Tag {tag}"
+            tag_info["Start"] = ankunft.strftime("%Y-%m-%d %H:%M")
+
+            heutige_lenkzeit = 540
+            if verbleibende_10h > 0:
+                heutige_lenkzeit = 600
+                verbleibende_10h -= 1
+                tag_info["Ereignis"] = "10h-Fahrt"
+            else:
+                tag_info["Ereignis"] = "9h-Fahrt"
+
+            fahrzeit_heute = min(heutige_lenkzeit, rest)
+            rest -= fahrzeit_heute
+            ankunft += timedelta(minutes=fahrzeit_heute)
+
+            tag_info["Fahrzeit"] = f"{fahrzeit_heute // 60}h {fahrzeit_heute % 60}min"
+
+            pause_text = ""
+            if tag == 1 and tankpause:
+                ankunft += timedelta(minutes=30)
+                pause_text = "30min Tankpause"
+
+            ruhezeit = 660
+            if verbleibende_9h > 0:
+                ruhezeit = 540
+                verbleibende_9h -= 1
+                pause_text += " + 9h-Ruhe"
+            else:
+                pause_text += " + 11h-Ruhe"
+
+            if we_aktiv and ankunft >= we_beginn and ankunft < we_ende:
+                dauer = (we_ende - ankunft)
+                ankunft += dauer
+                pause_text += f" + Wochenruhe {we_typ}"
+
+            tag_info["Pause"] = pause_text.strip(" +")
+            tag_info["Tagesende"] = ankunft.strftime("%Y-%m-%d %H:%M")
+
+            tagesplan.append(tag_info)
+
+        import pandas as pd
+        df = pd.DataFrame(tagesplan)
+        st.subheader("🗓️ Tagesübersicht")
+        st.dataframe(df)
+
+        st.subheader("📝 Kurzzusammenfassung")
+        for eintrag in tagesplan:
+            st.markdown(f"- **{eintrag['Tag']}**: {eintrag['Ereignis']}, {eintrag['Fahrzeit']}, Pause: {eintrag['Pause']}")
+:
             base_url = "https://maps.googleapis.com/maps/api/staticmap?"
             size = "640x400"
             path = f"path=enc:{polyline_str}"
@@ -180,3 +240,63 @@ if st.button("📦 Route analysieren & ETA berechnen"):
 
         polyline_str = data["routes"][0]["overview_polyline"]["points"]
         zeige_google_karte_mit_polyline(polyline_str)
+
+        tagesplan = []
+        rest = gesamt_dauer_min
+        tag = 0
+        ankunft = start_time
+        verbleibende_10h = sum(zehner_fahrten)
+        verbleibende_9h = sum(neuner_ruhen)
+
+        while rest > 0:
+            tag += 1
+            tag_info = {}
+            tag_info["Tag"] = f"Tag {tag}"
+            tag_info["Start"] = ankunft.strftime("%Y-%m-%d %H:%M")
+
+            heutige_lenkzeit = 540
+            if verbleibende_10h > 0:
+                heutige_lenkzeit = 600
+                verbleibende_10h -= 1
+                tag_info["Ereignis"] = "10h-Fahrt"
+            else:
+                tag_info["Ereignis"] = "9h-Fahrt"
+
+            fahrzeit_heute = min(heutige_lenkzeit, rest)
+            rest -= fahrzeit_heute
+            ankunft += timedelta(minutes=fahrzeit_heute)
+
+            tag_info["Fahrzeit"] = f"{fahrzeit_heute // 60}h {fahrzeit_heute % 60}min"
+
+            pause_text = ""
+            if tag == 1 and tankpause:
+                ankunft += timedelta(minutes=30)
+                pause_text = "30min Tankpause"
+
+            ruhezeit = 660
+            if verbleibende_9h > 0:
+                ruhezeit = 540
+                verbleibende_9h -= 1
+                pause_text += " + 9h-Ruhe"
+            else:
+                pause_text += " + 11h-Ruhe"
+
+            if we_aktiv and ankunft >= we_beginn and ankunft < we_ende:
+                dauer = (we_ende - ankunft)
+                ankunft += dauer
+                pause_text += f" + Wochenruhe {we_typ}"
+
+            tag_info["Pause"] = pause_text.strip(" +")
+            tag_info["Tagesende"] = ankunft.strftime("%Y-%m-%d %H:%M")
+
+            tagesplan.append(tag_info)
+
+        import pandas as pd
+        df = pd.DataFrame(tagesplan)
+        st.subheader("🗓️ Tagesübersicht")
+        st.dataframe(df)
+
+        st.subheader("📝 Kurzzusammenfassung")
+        for eintrag in tagesplan:
+            st.markdown(f"- **{eintrag['Tag']}**: {eintrag['Ereignis']}, {eintrag['Fahrzeit']}, Pause: {eintrag['Pause']}")
+
