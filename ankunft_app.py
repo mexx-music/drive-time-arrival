@@ -9,6 +9,7 @@ import time
 st.set_page_config(page_title="DriverRoute ETA – Wochenstunden", layout="centered")
 GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
 
+# Zeitzonenlogik
 def get_timezone_for_latlng(lat, lng):
     timestamp = int(time.time())
     tz_url = f"https://maps.googleapis.com/maps/api/timezone/json?location={lat},{lng}&timestamp={timestamp}&key={GOOGLE_API_KEY}"
@@ -28,16 +29,12 @@ def get_local_time(address):
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
 
+# UI-Start
 st.title("🚛 DriverRoute ETA – mit Wochenstunden-Eingabe")
 st.markdown("### 🧭 Wochenlenkzeit festlegen")
 
 vorgabe = st.radio("Wie viele Wochenlenkzeit stehen noch zur Verfügung?", ["Voll (56h)", "Manuell eingeben"], index=0)
-
-if vorgabe == "Voll (56h)":
-    verfügbare_woche = 3360
-else:
-    verfügbare_woche_stunden = st.number_input("⏱️ Eigene Eingabe (in Stunden)", min_value=0.0, max_value=56.0, value=36.0, step=0.25)
-    verfügbare_woche = int(verfügbare_woche_stunden * 60)
+verfügbare_woche = 3360 if vorgabe == "Voll (56h)" else int(st.number_input("⏱️ Eigene Eingabe (in Stunden)", 0.0, 56.0, 36.0, 0.25) * 60)
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
@@ -53,29 +50,23 @@ for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
 
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
-
 now_local, local_tz = get_local_time(startort)
+
 pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
-
-if pause_aktiv:
-    abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
-    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
-    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, 0)
-else:
-    st.subheader("🕒 Geplante Abfahrt")
-    abfahrt_datum = st.date_input("Datum", value=now_local.date())
-    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
-    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
-
+abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
+abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4 if pause_aktiv else now_local.hour)
+abfahrt_minute = st.number_input("🕧 Minute", 0, 59, 0 if pause_aktiv else now_local.minute)
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
-st.markdown("### 🕓 Wöchentliche Lenkzeit-Ausnahmen")
-col_a, col_b = st.columns(2)
-with col_a:
+# Checkboxen
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("10h-Fahrten (max. 2)")
     zehner_1 = st.checkbox("✅ 10h-Fahrt Nr. 1", value=True)
     zehner_2 = st.checkbox("✅ 10h-Fahrt Nr. 2", value=True)
-with col_b:
+with col2:
+    st.subheader("9h-Ruhepausen (max. 3)")
     neuner_1 = st.checkbox("✅ 9h-Ruhepause Nr. 1", value=True)
     neuner_2 = st.checkbox("✅ 9h-Ruhepause Nr. 2", value=True)
     neuner_3 = st.checkbox("✅ 9h-Ruhepause Nr. 3", value=True)
@@ -98,6 +89,7 @@ else:
 geschwindigkeit = st.number_input("🛻 Geschwindigkeit (km/h)", 60, 120, 80)
 tankpause = st.checkbox("⛽ Tankpause (30 min)?")
 
+# Berechnung starten
 if st.button("📦 Berechnen & ETA anzeigen"):
     url = f"https://maps.googleapis.com/maps/api/directions/json?origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}&key={GOOGLE_API_KEY}"
     if zwischenstopps:
@@ -120,17 +112,16 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         used_tank = False
 
         while remaining > 0:
-            if we_start and current_time >= we_start and current_time < we_ende:
+            if we_start and we_start <= current_time < we_ende:
                 current_time = we_ende
                 zehner_index = 0
                 neuner_index = 0
                 log.append(f"🛌 Wochenruhe von {we_start.strftime('%Y-%m-%d %H:%M')} bis {we_ende.strftime('%Y-%m-%d %H:%M')} – Rücksetzung aktiv")
                 continue
-
             if current_time.weekday() == 0 and current_time.hour >= 2:
                 zehner_index = 0
                 neuner_index = 0
-                log.append(f"🔄 Wochenreset: Montag ab 2:00 → 10h/9h zurückgesetzt")
+                log.append("🔄 Wochenreset: Montag ab 2:00 – Lenkzeit zurückgesetzt")
 
             max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
             gefahren = min(remaining, max_drive)
@@ -139,14 +130,14 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 pausen += 30
                 used_tank = True
             ende = current_time + timedelta(minutes=gefahren + pausen)
-            log.append(f"📆 {current_time.strftime('%A %H:%M')} → {int(gefahren)} min + {pausen} min Pause → Ende: {ende.strftime('%H:%M')}")
+            log.append(f"📆 {current_time.strftime('%A %H:%M')} → {int(gefahren)} min + {pausen} min → {ende.strftime('%H:%M')}")
             remaining -= gefahren
 
             if remaining <= 0:
                 break
 
             ruhezeit = 540 if neuner_index < 3 and neuner_ruhen[neuner_index] else 660
-            log.append(f"🌙 Ruhe {ruhezeit//60}h → weiter: {(ende + timedelta(minutes=ruhezeit)).strftime('%Y-%m-%d %H:%M')}")
+            log.append(f"🌙 Ruhezeit: {ruhezeit//60} h → weiter: {(ende + timedelta(minutes=ruhezeit)).strftime('%Y-%m-%d %H:%M')}")
             current_time = ende + timedelta(minutes=ruhezeit)
             if zehner_index < 2: zehner_index += 1
             if neuner_index < 3: neuner_index += 1
@@ -160,17 +151,15 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         st.info(f"🧮 Noch übrig: {verbl_10h}× 10h-Fahrt, {verbl_9h}× 9h-Ruhepause")
 
         verbleibend_min = verfügbare_woche - total_min
-
         if verbleibend_min < 0:
-            überschuss = abs(verbleibend_min)
-            h_m, m_m = divmod(überschuss, 60)
-            st.warning(f"⚠️ Achtung: Wochenlenkzeit überschritten um {h_m} h {m_m} min!")
-            st.info("🧭 Keine verbleibende Wochenlenkzeit – bereits überschritten.")
+            h_m, m_m = divmod(abs(verbleibend_min), 60)
+            st.warning(f"⚠️ Wochenlenkzeit überschritten um {h_m} h {m_m} min!")
         else:
             h, m = divmod(verbleibend_min, 60)
-            st.info(f"🧭 Verbleibende Wochenlenkzeit: {h} h {m} min")
+            st.info(f"🧭 Verbleibende Wochenlenkzeit: {h} h {m} min")
 
-        ziel_tz_str = get_timezone_for_address(zielort)
+        ziel_für_zeit = zielort if not zwischenstopps else zwischenstopps[-1]
+        ziel_tz_str = get_timezone_for_address(ziel_für_zeit)
         ziel_tz = pytz.timezone(ziel_tz_str)
         ende_zielzeit = ende.astimezone(ziel_tz)
 
