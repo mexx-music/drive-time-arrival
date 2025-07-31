@@ -168,8 +168,23 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         used_tank = False
         fähre_index = 0
         fähren_eingebaut = []
+# Hilfsfunktion: Minuten in "xhyy"-Format
+def format_minuten(minuten):
+    stunden = minuten // 60
+    rest = minuten % 60
+    return f"{stunden}h{rest:02}"
+
+# Hilfsfunktion: Englischer Wochentag → Deutsch
+def wochentag_deutsch(dt):
+    tage = {
+        "Monday": "Montag", "Tuesday": "Dienstag", "Wednesday": "Mittwoch",
+        "Thursday": "Donnerstag", "Friday": "Freitag",
+        "Saturday": "Samstag", "Sunday": "Sonntag"
+    }
+            return tage[dt.strftime("%A")]
 
         while remaining > 0:
+            # Fähre einbauen (wenn geplant und Zeitpunkt erreicht)
             if faehren_anzeigen and fähre_index < len(st.session_state.faehren):
                 f = st.session_state.faehren[fähre_index]
                 f_start = local_tz.localize(datetime.combine(f["datum"], datetime.strptime(f"{f['stunde']}:{f['minute']}", "%H:%M").time()))
@@ -182,24 +197,33 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                     fähre_index += 1
                     continue
 
-            if we_start and current_time >= we_start and current_time < we_ende:
+            # Wochenendruhe aktiv → Zeitsprung + Reset
+            if we_start and we_start <= current_time < we_ende:
                 current_time = we_ende
                 zehner_index = 0
                 neuner_index = 0
                 log.append(f"🛌 Wochenruhe von {we_start.strftime('%Y-%m-%d %H:%M')} bis {we_ende.strftime('%Y-%m-%d %H:%M')} – Rücksetzung aktiv")
                 continue
 
+            # Montag 2:00 Uhr = automatische Rücksetzung der 10h/9h-Kontingente
             if current_time.weekday() == 0 and current_time.hour >= 2:
                 zehner_index = 0
                 neuner_index = 0
-                log.append(f"🔄 Wochenreset: Montag ab 2:00 → 10h/9h zurückgesetzt")
+                log.append("🔄 Wochenreset: Montag ab 2:00 → 10h/9h zurückgesetzt")
 
-            max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
+            # Lenkzeitlogik (10h oder 9h)
+            if zehner_index < 2 and zehner_fahrten[zehner_index]:
+                max_drive = 600  # 10h
+            else:
+                max_drive = 540  # 9h
+
             gefahren = min(remaining, max_drive)
-            pausen = math.floor(gefahren / 270) * 45
+            pausen = (gefahren // 270) * 45  # nach je 4:30h → 45 min Pause
+
             if tankpause and not used_tank:
                 pausen += 30
                 used_tank = True
+
             ende = current_time + timedelta(minutes=gefahren + pausen)
             log.append(f"📆 {current_time.strftime('%A %H:%M')} → {int(gefahren)} min + {pausen} min Pause → Ende: {ende.strftime('%H:%M')}")
             remaining -= gefahren
@@ -210,21 +234,28 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             ruhezeit = 540 if neuner_index < 3 and neuner_ruhen[neuner_index] else 660
             log.append(f"🌙 Ruhe {ruhezeit//60}h → weiter: {(ende + timedelta(minutes=ruhezeit)).strftime('%Y-%m-%d %H:%M')}")
             current_time = ende + timedelta(minutes=ruhezeit)
-            if zehner_index < 2: zehner_index += 1
-            if neuner_index < 3: neuner_index += 1
 
+            if zehner_index < 2:
+                zehner_index += 1
+            if neuner_index < 3:
+                neuner_index += 1
+
+        # Fahrplan anzeigen
         st.markdown("## 📋 Fahrplan:")
         for i, eintrag in enumerate(log):
-            if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag enthält Endzeit
+            if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag = finale Zeit
                 time_part = eintrag.split("→ Ende:")[-1].strip()
                 eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
                 st.markdown(eintrag, unsafe_allow_html=True)
             else:
                 st.markdown(eintrag)
+
+        # Restliche Kontingente anzeigen
         verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
         verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
         st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
 
+        # Wochenlenkzeit
         verbleibend_min = verfügbare_woche - total_min
         if verbleibend_min < 0:
             überschuss = abs(verbleibend_min)
@@ -234,6 +265,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             h, m = divmod(verbleibend_min, 60)
             st.info(f"🧭 Verbleibende Wochenlenkzeit: {h}h {m}min")
 
+        # Zielzeitzone + finale Ankunft
         ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
         letzte_zeit = ende.astimezone(ziel_tz)
 
@@ -243,8 +275,9 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
         ({ziel_tz.zone})
         </h2>
-        """, unsafe_allow_html=True)         
+        """, unsafe_allow_html=True)
 
+        # Kartenanzeige
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
