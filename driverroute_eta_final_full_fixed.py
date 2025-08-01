@@ -1,5 +1,5 @@
 
-# 🚛 DriverRoute ETA – Smart-Fähren-Modul (Norwegen + Griechenland)
+# 🚛 DriverRoute ETA – Smart-Fähren-Modul (Norwegen + Griechenland, korrigiert)
 import streamlit as st
 from datetime import datetime, timedelta
 import pytz
@@ -25,10 +25,8 @@ def ferry_eta_block(hafen, eta_vorhafen, fahrten):
         status = "⚠️ Nicht ausreichend für Ruhepause"
     ankunft = (datetime.combine(datetime.today(), datetime.strptime(fähre["abfahrt"], "%H:%M").time()) +
                timedelta(hours=fähre["dauer"]))
-    st.success(f"Wartezeit: {warte:.1f}h, Fahrt: {fähre['dauer']}h → Gesamt: {gesamt:.1f}h
-
-{status}")
-    st.info(f"⛴️ Ankunft {f['ziel']}: {ankunft.strftime('%H:%M')} Uhr")
+    st.success(f"Wartezeit: {warte:.1f}h, Fahrt: {fahre['dauer']}h → Gesamt: {gesamt:.1f}h")
+    st.info(f"⛴️ Ankunft {fähre['ziel']}: {ankunft.strftime('%H:%M')} Uhr")
 
 st.markdown("## 🇬🇷 Griechenland: Igoumenitsa → Brindisi/Ancona/Venedig")
 eta_igou = st.time_input("🕓 ETA Igoumenitsa", value=datetime.strptime("15:00", "%H:%M").time())
