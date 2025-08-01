@@ -8,6 +8,7 @@ import time
 
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
 import os
+import os
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # Fähren-Datenbank
