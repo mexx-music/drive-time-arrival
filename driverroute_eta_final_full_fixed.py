@@ -62,16 +62,19 @@ def get_local_time(address):
 def get_location_details(address):
     geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
     geo_data = requests.get(geo_url).json()
-    if geo_data["status"] == "OK":
-        components = geo_data["results"][0]["address_components"]
+    if geo_data["status"] == "OK" and len(geo_data["results"]) > 0:
+        components = geo_data["results"][0].get("address_components", [])
         plz = country = ""
         for comp in components:
             if "postal_code" in comp["types"]:
                 plz = comp["long_name"]
             if "country" in comp["types"]:
                 country = comp["long_name"]
-        return f"PLZ: {plz} – Land: {country}" if plz or country else "✔️ Ort erkannt"
-    return "❌ Ort nicht gefunden"
+        if plz or country:
+            return f"PLZ: {plz} – Land: {country}".strip(" –")
+        else:
+            return "✔️ Ort erkannt"
+    return "❌ Ort nicht erkennbar – bitte genauer eingeben (z. B. ‚Ort, Land‘)"
 
 def format_minutes_to_hm(minutes):
     if minutes >= 60:
