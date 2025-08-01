@@ -58,25 +58,6 @@ def get_local_time(address):
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
 
-
-def get_place_info(address):
-    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
-    r = requests.get(url).json()
-    if r["status"] == "OK":
-        result = r["results"][0]
-        components = result["address_components"]
-        plz = ort = land = ""
-        for comp in components:
-            if "postal_code" in comp["types"]:
-                plz = comp["long_name"]
-            if "locality" in comp["types"] or "postal_town" in comp["types"]:
-                ort = comp["long_name"]
-            if "country" in comp["types"]:
-                land = comp["long_name"]
-        return f"📌 {ort}, {plz} ({land})"
-    return "❌ Ort nicht gefunden"
-
-
 def format_minutes_to_hm(minutes):
     if minutes >= 60:
         h, m = divmod(minutes, 60)
@@ -94,11 +75,7 @@ else:
     verfügbare_woche = int(verfügbare_woche_stunden * 60)
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
-if startort:
-    st.caption(get_place_info(startort))
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
-if zielort:
-    st.caption(get_place_info(zielort))
 
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
@@ -106,9 +83,7 @@ if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
         st.session_state.zwischenstopps.append("")
 for i in range(len(st.session_state.zwischenstopps)):
-    st.session_state.zwischenstopps[i] = st.text_input
-    if st.session_state.zwischenstopps[i]:
-        st.caption(get_place_info(st.session_state.zwischenstopps[i]))(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
 now_local, local_tz = get_local_time(startort)
