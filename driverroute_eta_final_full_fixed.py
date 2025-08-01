@@ -60,10 +60,30 @@ def get_local_time(address):
 
 
 def get_location_details(address):
+    # Erst Google versuchen
     geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
-    geo_data = requests.get(geo_url).json()
-    if geo_data["status"] == "OK" and geo_data["results"]:
-        return "✔️ Ort erkannt"
+    try:
+        geo_data = requests.get(geo_url).json()
+        if geo_data["status"] == "OK" and geo_data["results"]:
+            return "✔️ Ort erkannt (Google)"
+    except:
+        pass
+
+    # Dann ORS versuchen
+    ors_url = f"https://api.openrouteservice.org/geocode/search?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjA4MjNjY2EzNDM3YjRhMzhiZmYzNjNmODk0ZGRhNGI1IiwiaCI6Im11cm11cjY0In0=0&text={urllib.parse.quote(address)}"
+    try:
+        ors_data = requests.get(ors_url).json()
+        features = ors_data.get("features", [])
+        if features:
+            props = features[0]["properties"]
+            plz = props.get("postalcode", "")
+            country = props.get("country", "")
+            if plz or country:
+                return f"✔️ Ort erkannt (ORS): PLZ {plz} – {country}".strip(" –")
+            return "✔️ Ort erkannt (ORS)"
+    except:
+        pass
+
     return "❌ Ort nicht gefunden – bitte genauer eingeben"
 
 def format_minutes_to_hm(minutes):
