@@ -54,6 +54,9 @@ def get_timezone_for_address(address):
     return "Europe/Vienna"
 
 def get_local_time(address):
+    tz_str = get_timezone_for_address(address)
+    tz = pytz.timezone(tz_str)
+    return datetime.now(tz), tz
 
 def format_minutes_to_hm(minutes):
     if minutes >= 60:
@@ -61,13 +64,9 @@ def format_minutes_to_hm(minutes):
         return f"{h}h{m}" if m > 0 else f"{h}h"
     else:
         return f"{minutes} min"
-    tz_str = get_timezone_for_address(address)
-    tz = pytz.timezone(tz_str)
-    return datetime.now(tz), tz
 
 st.title("🚛 DriverRoute ETA – mit Fähren & Wochenlenkzeit")
 
-# Wochenlenkzeit
 vorgabe = st.radio("Wie viele Wochenlenkzeit stehen noch zur Verfügung?", ["Voll (56h)", "Manuell eingeben"], index=0)
 if vorgabe == "Voll (56h)":
     verfügbare_woche = 3360
@@ -78,23 +77,17 @@ else:
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
 
-# Zwischenstopps
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
-
 if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
         st.session_state.zwischenstopps.append("")
-
 for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
-# Abfahrtszeit
 now_local, local_tz = get_local_time(startort)
 pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
-
 if pause_aktiv:
     abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
     abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
@@ -104,19 +97,15 @@ else:
     abfahrt_datum = st.date_input("Datum", value=now_local.date())
     abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
     abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
-
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
-# Fährbereich (optional)
 faehren_anzeigen = st.checkbox("🚢 Fährverbindung(en) hinzufügen?")
 if faehren_anzeigen:
     if "faehren" not in st.session_state:
         st.session_state.faehren = []
-
     if st.button("➕ Fähre hinzufügen"):
         st.session_state.faehren.append({"route": list(FAEHREN.keys())[0], "datum": now_local.date(), "stunde": 12, "minute": 0})
-
     for idx, f in enumerate(st.session_state.faehren):
         with st.expander(f"Fähre {idx+1}"):
             f["route"] = st.selectbox(f"🛳 Route {idx+1}", list(FAEHREN.keys()), index=list(FAEHREN.keys()).index(f["route"]), key=f"route_{idx}")
@@ -134,7 +123,6 @@ with col_b:
     neuner_1 = st.checkbox("✅ 9h-Ruhepause Nr. 1", value=True)
     neuner_2 = st.checkbox("✅ 9h-Ruhepause Nr. 2", value=True)
     neuner_3 = st.checkbox("✅ 9h-Ruhepause Nr. 3", value=True)
-
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
@@ -174,7 +162,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         neuner_index = 0
         used_tank = False
         fähre_index = 0
-        fähren_eingebaut = []
 
         while remaining > 0:
             if faehren_anzeigen and fähre_index < len(st.session_state.faehren):
@@ -185,7 +172,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                     f_ende = f_start + timedelta(hours=f_dauer)
                     log.append(f"🚢 Fähre {f['route']}: {f_dauer} h → Ankunft {f_ende.strftime('%Y-%m-%d %H:%M')}")
                     current_time = f_ende
-                    fähren_eingebaut.append(f["route"])
                     fähre_index += 1
                     continue
 
@@ -222,7 +208,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
 
         st.markdown("## 📋 Fahrplan:")
         for i, eintrag in enumerate(log):
-            if "→ Ende:" in eintrag and i == len(log) - 2:  # Vorletzter Eintrag enthält Endzeit
+            if "→ Ende:" in eintrag and i == len(log) - 2:
                 time_part = eintrag.split("→ Ende:")[-1].strip()
                 eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
                 st.markdown(eintrag, unsafe_allow_html=True)
@@ -250,12 +236,11 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
         ({ziel_tz.zone})
         </h2>
-        """, unsafe_allow_html=True)         
+        """, unsafe_allow_html=True)
 
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
             map_url += f"&waypoints={waypoints_encoded}"
-
         st.markdown("### 🗺️ Routenkarte:")
         st.components.v1.iframe(map_url, height=500)
