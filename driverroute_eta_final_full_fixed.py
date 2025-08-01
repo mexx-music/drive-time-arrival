@@ -7,7 +7,7 @@ import math
 import time
 
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
-GOOGLE_API_KEY = st.text_input("🔑 Google API-Key eingeben", type="password")
+GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
 
 # Fähren-Datenbank
 FAEHREN = {
@@ -58,29 +58,6 @@ def get_local_time(address):
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
 
-
-def get_location_details(address):
-    if not GOOGLE_API_KEY:
-        return "❌ Kein API-Key"
-    geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
-    try:
-        geo_data = requests.get(geo_url).json()
-        if geo_data["status"] == "OK" and geo_data["results"]:
-            components = geo_data["results"][0].get("address_components", [])
-            plz = country = ""
-            for comp in components:
-                if "postal_code" in comp["types"]:
-                    plz = comp["long_name"]
-                if "country" in comp["types"]:
-                    country = comp["long_name"]
-            if plz or country:
-                return f"✔️ Ort erkannt: PLZ {plz} – {country}".strip(" –")
-            else:
-                return "✔️ Ort erkannt"
-    except:
-        pass
-    return "❌ Ort nicht gefunden – bitte genauer eingeben"
-
 def format_minutes_to_hm(minutes):
     if minutes >= 60:
         h, m = divmod(minutes, 60)
@@ -97,7 +74,11 @@ else:
     verfügbare_woche_stunden = st.number_input("⏱️ Eigene Eingabe (in Stunden)", min_value=0.0, max_value=56.0, value=36.0, step=0.25)
     verfügbare_woche = int(verfügbare_woche_stunden * 60)
 
+startort = st.text_input("📍 Startort", "Volos, Griechenland")
+zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
 
+show_plz_info("Startort", startort)
+show_plz_info("Zielort", zielort)
 
 
 if "zwischenstopps" not in st.session_state:
@@ -107,7 +88,6 @@ if st.button("➕ Zwischenstopp hinzufügen"):
         st.session_state.zwischenstopps.append("")
 for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
 now_local, local_tz = get_local_time(startort)
@@ -267,25 +247,23 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
             map_url += f"&waypoints={waypoints_encoded}"
         st.markdown("### 🗺️ Routenkarte:")
-        st.components.v1.iframe(map_url, height=500# Neues kombiniertes PLZ+Ort-Eingabefeld
-def resolve_combined_input(label, default):
-    raw = st.text_input(label, default)
-    if raw.strip():
-        resolved = raw.strip()
-        st.caption(get_location_details(resolved))
-        return resolved
-    return ""
+        st.components.v1.iframe(map_url, height=500)
 
-startort = resolve_combined_input("📮 Startort (PLZ + Ort oder Name)", "4650 L")
-zielort = resolve_combined_input("📮 Zielort (PLZ + Ort oder Name)", "66740 S")
 
-if "zwischenstopps" not in st.session_state:
-    st.session_state.zwischenstopps = []
-if st.button("➕ Zwischenstopp hinzufügen"):
-    if len(st.session_state.zwischenstopps) < 10:
-        st.session_state.zwischenstopps.append("")
-for i in range(len(st.session_state.zwischenstopps)):
-    st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1} (PLZ + Ort)", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-
-)
+def show_plz_info(ort_label, ort):
+    if ort:
+        geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(ort)}&key={GOOGLE_API_KEY}"
+        geo_data = requests.get(geo_url).json()
+        if geo_data["status"] == "OK":
+            components = geo_data["results"][0]["address_components"]
+            plz = ortname = land = "?"
+            for comp in components:
+                if "postal_code" in comp["types"]:
+                    plz = comp["long_name"]
+                if "locality" in comp["types"] or "postal_town" in comp["types"]:
+                    ortname = comp["long_name"]
+                if "country" in comp["types"]:
+                    land = comp["long_name"]
+            st.info(f"{ort_label}: {plz} {ortname}, {land}")
+        else:
+            st.warning(f"{ort_label}: Adresse nicht gefunden")
