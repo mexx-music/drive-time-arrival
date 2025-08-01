@@ -95,14 +95,14 @@ else:
     verfügbare_woche = int(verfügbare_woche_stunden * 60)
 
 
-startort = st.text_input("📍 Startort", "Volos, Griechenland")
+startort = st.text_input("📍 Startort", "Volos, Griechenland", key="startort_input")
 start_details = ortsdetails_anzeigen(startort)
 if "Fehler" not in start_details:
     st.caption(f"📌 {start_details.get('PLZ', '')} {start_details.get('Ort', '')}, {start_details.get('Land', '')}")
 else:
     st.warning("📍 Ort nicht gefunden oder ungültig")
 
-zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
+zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland", key="zielort_input")
 ziel_details = ortsdetails_anzeigen(zielort)
 if "Fehler" not in ziel_details:
     st.caption(f"📌 {ziel_details.get('PLZ', '')} {ziel_details.get('Ort', '')}, {ziel_details.get('Land', '')}")
@@ -124,7 +124,7 @@ for i in range(len(st.session_state.zwischenstopps)):
 
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
-zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
+zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland", key="zielort_input")
 
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
