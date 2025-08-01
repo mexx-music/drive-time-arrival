@@ -54,6 +54,13 @@ def get_timezone_for_address(address):
     return "Europe/Vienna"
 
 def get_local_time(address):
+
+def format_minutes_to_hm(minutes):
+    if minutes >= 60:
+        h, m = divmod(minutes, 60)
+        return f"{h}h{m}" if m > 0 else f"{h}h"
+    else:
+        return f"{minutes} min"
     tz_str = get_timezone_for_address(address)
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
@@ -201,7 +208,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 pausen += 30
                 used_tank = True
             ende = current_time + timedelta(minutes=gefahren + pausen)
-            log.append(f"📆 {current_time.strftime('%A %H:%M')} → {int(gefahren)} min + {pausen} min Pause → Ende: {ende.strftime('%H:%M')}")
+            log.append(f"📆 {current_time.strftime('%A %H:%M')} → {format_minutes_to_hm(gefahren)} + {format_minutes_to_hm(pausen)} Pause → Ende: {ende.strftime('%H:%M')}")
             remaining -= gefahren
 
             if remaining <= 0:
