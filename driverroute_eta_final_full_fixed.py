@@ -98,6 +98,9 @@ else:
 startort = st.text_input("📍 Startort", "Volos, Griechenland", key="startort_input")
 start_details = ortsdetails_anzeigen(startort)
 if "Fehler" not in start_details:
+    st.caption(f"📌 {start_details.get('PLZ', '')} {start_details.get('Ort', '')}, {start_details.get('Land', '')}", key="start_caption")
+else:
+    st.warning("📍 Ort nicht gefunden oder ungültig", key="start_warn")
     st.caption(f"📌 {start_details.get('PLZ', '')} {start_details.get('Ort', '')}, {start_details.get('Land', '')}")
 else:
     st.warning("📍 Ort nicht gefunden oder ungültig")
@@ -105,6 +108,9 @@ else:
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland", key="zielort_input")
 ziel_details = ortsdetails_anzeigen(zielort)
 if "Fehler" not in ziel_details:
+    st.caption(f"📌 {ziel_details.get('PLZ', '')} {ziel_details.get('Ort', '')}, {ziel_details.get('Land', '')}", key="ziel_caption")
+else:
+    st.warning("🏁 Ort nicht gefunden oder ungültig", key="ziel_warn")
     st.caption(f"📌 {ziel_details.get('PLZ', '')} {ziel_details.get('Ort', '')}, {ziel_details.get('Land', '')}")
 else:
     st.warning("🏁 Ort nicht gefunden oder ungültig")
