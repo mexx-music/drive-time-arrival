@@ -271,3 +271,9 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             map_url += f"&waypoints={waypoints_encoded}"
         st.markdown("### 🗺️ Routenkarte:")
         st.components.v1.iframe(map_url, height=500)
+
+
+# Debug-Ausgabe zur Google Directions API
+st.markdown("### 🔍 Debug-Info")
+st.write("Verwendete URL:", url)
+st.json(data)
