@@ -7,7 +7,7 @@ import math
 import time
 
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
-GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
+GOOGLE_API_KEY = "AIzaSyAYunu2ZTCt2NHVoVx9nurelFh_FtsEpvY"
 
 # Fähren-Datenbank
 FAEHREN = {
