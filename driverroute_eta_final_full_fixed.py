@@ -83,14 +83,14 @@ else:
 startort = st.text_input("📍 Startort", "Volos, Griechenland", key="start_input")
 start_info = ortsdetails_anzeigen(startort)
 if "Fehler" not in start_info:
-    st.caption(f"📌 {start_info.get('PLZ','')} {start_info.get('Ort','')}, {start_info.get('Land','')}", key="start_caption")
+    st.caption(f"📌 {start_info.get('PLZ','')} {start_info.get('Ort','')}, {start_info.get('Land','')}")
 else:
     st.warning("📍 Startort ungültig", key="start_warn")
 
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland", key="ziel_input")
 ziel_info = ortsdetails_anzeigen(zielort)
 if "Fehler" not in ziel_info:
-    st.caption(f"📌 {ziel_info.get('PLZ','')} {ziel_info.get('Ort','')}, {ziel_info.get('Land','')}", key="ziel_caption")
+    st.caption(f"📌 {ziel_info.get('PLZ','')} {ziel_info.get('Ort','')}, {ziel_info.get('Land','')}")
 else:
     st.warning("🏁 Zielort ungültig", key="ziel_warn")
 
@@ -197,14 +197,14 @@ else:
 startort = st.text_input("📍 Startort", "Volos, Griechenland", key="start_input")
 start_info = ortsdetails_anzeigen(startort)
 if "Fehler" not in start_info:
-    st.caption(f"📌 {start_info.get('PLZ','')} {start_info.get('Ort','')}, {start_info.get('Land','')}", key="start_caption")
+    st.caption(f"📌 {start_info.get('PLZ','')} {start_info.get('Ort','')}, {start_info.get('Land','')}")
 else:
     st.warning("📍 Startort ungültig", key="start_warn")
 
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland", key="ziel_input")
 ziel_info = ortsdetails_anzeigen(zielort)
 if "Fehler" not in ziel_info:
-    st.caption(f"📌 {ziel_info.get('PLZ','')} {ziel_info.get('Ort','')}, {ziel_info.get('Land','')}", key="ziel_caption")
+    st.caption(f"📌 {ziel_info.get('PLZ','')} {ziel_info.get('Ort','')}, {ziel_info.get('Land','')}")
 else:
     st.warning("🏁 Zielort ungültig", key="ziel_warn")
 
