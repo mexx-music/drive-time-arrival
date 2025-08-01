@@ -55,6 +55,7 @@ def get_timezone_for_address(address):
 
 def get_local_time(address):
 
+
 def get_location_details(address):
     geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
     geo_data = requests.get(geo_url).json()
@@ -99,27 +100,11 @@ if "zwischenstopps" not in st.session_state:
 if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
         st.session_state.zwischenstopps.append("")
+
 for i in range(len(st.session_state.zwischenstopps)):
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
     st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
-    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
 now_local, local_tz = get_local_time(startort)
