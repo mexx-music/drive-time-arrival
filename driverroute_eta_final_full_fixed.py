@@ -9,6 +9,7 @@ import time
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
 GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
 
+# Fähren-Datenbank
 FAEHREN = {
     "Patras–Ancona (Superfast)": 22,
     "Ancona–Patras (Superfast)": 22,
@@ -53,25 +54,24 @@ def get_timezone_for_address(address):
     return "Europe/Vienna"
 
 def get_local_time(address):
+
+def get_location_details(address):
+    geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+    geo_data = requests.get(geo_url).json()
+    if geo_data["status"] == "OK":
+        components = geo_data["results"][0]["address_components"]
+        plz = country = ""
+        for comp in components:
+            if "postal_code" in comp["types"]:
+                plz = comp["long_name"]
+            if "country" in comp["types"]:
+                country = comp["long_name"]
+        return f"PLZ: {plz} – Land: {country}" if plz or country else "✔️ Ort erkannt"
+    return "❌ Ort nicht gefunden"
+
     tz_str = get_timezone_for_address(address)
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
-
-
-def get_postal_code(address):
-    try:
-        if "," not in address:
-            address += ", Europa"  # Fallback für unklare Eingaben wie "Lambach"
-        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
-        response = requests.get(url).json()
-        if response["status"] == "OK":
-            for comp in response["results"][0]["address_components"]:
-                if "postal_code" in comp["types"]:
-                    return comp.get("long_name") or comp.get("short_name")
-            return "❓ Ort gefunden, aber keine PLZ"
-        return "❌ Ort nicht gefunden"
-    except:
-        return "⚠️ Fehler bei Abfrage"
 
 def format_minutes_to_hm(minutes):
     if minutes >= 60:
@@ -83,13 +83,16 @@ def format_minutes_to_hm(minutes):
 st.title("🚛 DriverRoute ETA – mit Fähren & Wochenlenkzeit")
 
 vorgabe = st.radio("Wie viele Wochenlenkzeit stehen noch zur Verfügung?", ["Voll (56h)", "Manuell eingeben"], index=0)
-verfügbare_woche = 3360 if vorgabe == "Voll (56h)" else int(st.number_input("⏱️ Eigene Eingabe (in Stunden)", 0.0, 56.0, 36.0, 0.25) * 60)
+if vorgabe == "Voll (56h)":
+    verfügbare_woche = 3360
+else:
+    verfügbare_woche_stunden = st.number_input("⏱️ Eigene Eingabe (in Stunden)", min_value=0.0, max_value=56.0, value=36.0, step=0.25)
+    verfügbare_woche = int(verfügbare_woche_stunden * 60)
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
-st.caption(f"📮 PLZ: {get_postal_code(startort)}")
-
+st.caption(get_location_details(startort))
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
-st.caption(f"📮 PLZ: {get_postal_code(zielort)}")
+st.caption(get_location_details(zielort))
 
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
@@ -97,20 +100,41 @@ if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
         st.session_state.zwischenstopps.append("")
 for i in range(len(st.session_state.zwischenstopps)):
-    st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-    st.caption(f"📮 PLZ: {get_postal_code(st.session_state.zwischenstopps[i])}")
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
+    st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    st.caption(get_location_details(st.session_state.zwischenstopps[i]))
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
 now_local, local_tz = get_local_time(startort)
 pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
-abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
-abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4 if pause_aktiv else now_local.hour)
-abfahrt_minute = st.number_input("🕧 Minute", 0, 59, 0 if pause_aktiv else now_local.minute)
+if pause_aktiv:
+    abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
+    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
+    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, 0)
+else:
+    st.subheader("🕒 Geplante Abfahrt")
+    abfahrt_datum = st.date_input("Datum", value=now_local.date())
+    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
+    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
-
-# ... (Ab hier kommt der restliche Berechnungs- und Anzeige-Teil wie zuvor – Code fortführbar)
-
 
 faehren_anzeigen = st.checkbox("🚢 Fährverbindung(en) hinzufügen?")
 if faehren_anzeigen:
@@ -226,7 +250,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 st.markdown(eintrag, unsafe_allow_html=True)
             else:
                 st.markdown(eintrag)
-
         verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
         verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
         st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
