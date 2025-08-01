@@ -57,14 +57,21 @@ def get_local_time(address):
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
 
+
 def get_postal_code(address):
-    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
-    response = requests.get(url).json()
-    if response["status"] == "OK":
-        for comp in response["results"][0]["address_components"]:
-            if "postal_code" in comp["types"]:
-                return comp["long_name"]
-    return "?"
+    try:
+        if "," not in address:
+            address += ", Europa"  # Fallback für unklare Eingaben wie "Lambach"
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+        response = requests.get(url).json()
+        if response["status"] == "OK":
+            for comp in response["results"][0]["address_components"]:
+                if "postal_code" in comp["types"]:
+                    return comp.get("long_name") or comp.get("short_name")
+            return "❓ Ort gefunden, aber keine PLZ"
+        return "❌ Ort nicht gefunden"
+    except:
+        return "⚠️ Fehler bei Abfrage"
 
 def format_minutes_to_hm(minutes):
     if minutes >= 60:
