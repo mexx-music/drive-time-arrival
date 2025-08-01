@@ -9,7 +9,6 @@ import time
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
 GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
 
-# Fähren-Datenbank
 FAEHREN = {
     "Patras–Ancona (Superfast)": 22,
     "Ancona–Patras (Superfast)": 22,
@@ -79,11 +78,14 @@ zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
 
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
+
 if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
         st.session_state.zwischenstopps.append("")
+
 for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
 now_local, local_tz = get_local_time(startort)
@@ -97,6 +99,7 @@ else:
     abfahrt_datum = st.date_input("Datum", value=now_local.date())
     abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
     abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
+
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
@@ -123,6 +126,7 @@ with col_b:
     neuner_1 = st.checkbox("✅ 9h-Ruhepause Nr. 1", value=True)
     neuner_2 = st.checkbox("✅ 9h-Ruhepause Nr. 2", value=True)
     neuner_3 = st.checkbox("✅ 9h-Ruhepause Nr. 3", value=True)
+
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
@@ -214,6 +218,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 st.markdown(eintrag, unsafe_allow_html=True)
             else:
                 st.markdown(eintrag)
+
         verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
         verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
         st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
