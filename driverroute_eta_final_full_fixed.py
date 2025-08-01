@@ -39,7 +39,13 @@ FAEHREN = {
     "Kiel–Gothenburg (Stena Line)": 14
 }
 
-def get_full_address(address):
+def get_full_address_debug(address):
+    geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+    geo_data = requests.get(geo_url).json()
+    if geo_data["status"] == "OK":
+        return f"{geo_data['results'][0]['formatted_address']}  (Status: OK)"
+    else:
+        return f"❌ Fehler: {geo_data['status']} – Adresse konnte nicht gefunden werden"
     geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
     geo_data = requests.get(geo_url).json()
     if geo_data["status"] == "OK":
@@ -84,11 +90,11 @@ else:
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 if st.button("🔍 Startort prüfen"):
-    st.caption(f"✅ Startadresse: **{get_full_address(startort)}**")
+    st.caption(f"✅ Startadresse: **{get_full_address_debug(startort)}**")
 
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
 if st.button("🔍 Zielort prüfen"):
-    st.caption(f"✅ Zieladresse: **{get_full_address(zielort)}**")
+    st.caption(f"✅ Zieladresse: **{get_full_address_debug(zielort)}**")
 
 # Zwischenstopps mit PLZ-Prüfung
 if "zwischenstopps" not in st.session_state:
@@ -101,7 +107,7 @@ if st.button("➕ Zwischenstopp hinzufügen"):
 for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
     if st.button(f"🔍 Zwischenstopp {i+1} prüfen", key=f"check_{i}"):
-        st.caption(f"📌 Adresse {i+1}: **{get_full_address(st.session_state.zwischenstopps[i])}**")
+        st.caption(f"📌 Adresse {i+1}: **{get_full_address_debug(st.session_state.zwischenstopps[i])}**")
 
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
