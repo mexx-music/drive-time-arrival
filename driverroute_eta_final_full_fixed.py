@@ -7,7 +7,7 @@ import math
 import time
 
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
-GOOGLE_API_KEY = "AIzaSyBdLST6U4i7nM56dFrTDEMOFAKEKEY1234"  # DEMO-KEY für Test"
+GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
 
 # Fähren-Datenbank
 FAEHREN = {
@@ -174,11 +174,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
     data = r.json()
 
     if data["status"] != "OK":
-        st.error("❌ Routenfehler – bitte überprüfe alle Orte!")
-        st.markdown("### 🧪 Debug-Link zur Prüfung:")
-        st.code(url, language="text")
-        st.markdown("### 🧪 Google-Antwort:")
-        st.json(data)
         st.error("Routenfehler")
     else:
         km = round(sum(leg["distance"]["value"] for leg in data["routes"][0]["legs"]) / 1000, 1)
