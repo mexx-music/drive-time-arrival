@@ -101,7 +101,17 @@ if "Fehler" not in start_details:
     st.caption(f"📌 {start_details.get('PLZ', '')} {start_details.get('Ort', '')}, {start_details.get('Land', '')}", key="start_caption")
 else:
     st.warning("📍 Ort nicht gefunden oder ungültig", key="start_warn")
+start_details = ortsdetails_anzeigen(startort)
+if "Fehler" not in start_details:
+    st.caption(f"📌 {start_details.get('PLZ', '')} {start_details.get('Ort', '')}, {start_details.get('Land', '')}", key="start_caption")
+else:
+    st.warning("📍 Ort nicht gefunden oder ungültig", key="start_warn")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland", key="zielort_input")
+ziel_details = ortsdetails_anzeigen(zielort)
+if "Fehler" not in ziel_details:
+    st.caption(f"📌 {ziel_details.get('PLZ', '')} {ziel_details.get('Ort', '')}, {ziel_details.get('Land', '')}", key="ziel_caption")
+else:
+    st.warning("🏁 Ort nicht gefunden oder ungültig", key="ziel_warn")
 ziel_details = ortsdetails_anzeigen(zielort)
 if "Fehler" not in ziel_details:
     st.caption(f"📌 {ziel_details.get('PLZ', '')} {ziel_details.get('Ort', '')}, {ziel_details.get('Land', '')}", key="ziel_caption")
@@ -128,6 +138,18 @@ for i in range(len(st.session_state.zwischenstopps)):
     else:
         st.warning(f"❗ Zwischenstopp {i+1} ungültig", key=f"stop_warn_{i}")
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
+    st.session_state.zwischenstopps = []
+if st.button("➕ Zwischenstopp hinzufügen"):
+    if len(st.session_state.zwischenstopps) < 10:
+        st.session_state.zwischenstopps.append("")
+for i in range(len(st.session_state.zwischenstopps)):
+    st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    stop_details = ortsdetails_anzeigen(st.session_state.zwischenstopps[i])
+    if "Fehler" not in stop_details:
+        st.caption(f"📌 {stop_details.get('PLZ', '')} {stop_details.get('Ort', '')}, {stop_details.get('Land', '')}", key=f"stop_caption_{i}")
+    else:
+        st.warning(f"❗ Zwischenstopp {i+1} ungültig", key=f"stop_warn_{i}")
+zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
         st.session_state.zwischenstopps.append("")
@@ -142,8 +164,25 @@ for i in range(len(st.session_state.zwischenstopps)):
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland", key="zielort_input")
+ziel_details = ortsdetails_anzeigen(zielort)
+if "Fehler" not in ziel_details:
+    st.caption(f"📌 {ziel_details.get('PLZ', '')} {ziel_details.get('Ort', '')}, {ziel_details.get('Land', '')}", key="ziel_caption")
+else:
+    st.warning("🏁 Ort nicht gefunden oder ungültig", key="ziel_warn")
 
 if "zwischenstopps" not in st.session_state:
+    st.session_state.zwischenstopps = []
+if st.button("➕ Zwischenstopp hinzufügen"):
+    if len(st.session_state.zwischenstopps) < 10:
+        st.session_state.zwischenstopps.append("")
+for i in range(len(st.session_state.zwischenstopps)):
+    st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    stop_details = ortsdetails_anzeigen(st.session_state.zwischenstopps[i])
+    if "Fehler" not in stop_details:
+        st.caption(f"📌 {stop_details.get('PLZ', '')} {stop_details.get('Ort', '')}, {stop_details.get('Land', '')}", key=f"stop_caption_{i}")
+    else:
+        st.warning(f"❗ Zwischenstopp {i+1} ungültig", key=f"stop_warn_{i}")
+zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
     st.session_state.zwischenstopps = []
 if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
