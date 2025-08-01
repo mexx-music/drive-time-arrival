@@ -74,18 +74,41 @@ else:
     verfügbare_woche_stunden = st.number_input("⏱️ Eigene Eingabe (in Stunden)", min_value=0.0, max_value=56.0, value=36.0, step=0.25)
     verfügbare_woche = int(verfügbare_woche_stunden * 60)
 
+
+def get_full_address(address):
+    geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+    geo_data = requests.get(geo_url).json()
+    if geo_data["status"] == "OK":
+        return geo_data["results"][0]["formatted_address"]
+    return "Adresse nicht gefunden"
+
+
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
 zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
 
+if startort:
+    full_start = get_full_address(startort)
+    st.caption(f"✅ Startadresse erkannt: **{full_start}**")
+
+if zielort:
+    full_ziel = get_full_address(zielort)
+    st.caption(f"✅ Zieladresse erkannt: **{full_ziel}**")
+
+
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
+
 if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
         st.session_state.zwischenstopps.append("")
+
 for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
+    if st.session_state.zwischenstopps[i]:
+        full = get_full_address(st.session_state.zwischenstopps[i])
+        st.caption(f"📌 Adresse {i+1}: **{full}**")
 
+zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 now_local, local_tz = get_local_time(startort)
 pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
 if pause_aktiv:
