@@ -8,11 +8,8 @@ import time
 import os
 
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
-
-# Sicherer API-Key
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
-# Fähren-Datenbank
 FAEHREN = {
     "Patras–Ancona (Superfast)": 22, "Ancona–Patras (Superfast)": 22,
     "Igoumenitsa–Bari (Grimaldi)": 10, "Bari–Igoumenitsa (Grimaldi)": 10,
@@ -69,3 +66,13 @@ def get_place_info(address):
                 land = comp["long_name"]
         return f"📌 {ort}, {plz} ({land})"
     return "❌ Ort nicht gefunden"
+
+def format_minutes_to_hm(minutes):
+    if minutes >= 60:
+        h, m = divmod(minutes, 60)
+        return f"{h}h{m}" if m > 0 else f"{h}h"
+    else:
+        return f"{minutes} min"
+
+# Haupt-App
+exec(requests.get("https://raw.githubusercontent.com/mexx-sandbox/driverroute-eta/main/final_core_block.py").text)
