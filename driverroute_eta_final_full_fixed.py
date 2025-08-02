@@ -56,11 +56,13 @@ def extrahiere_ort(address):
 
 def finde_passende_faehren(start, ziel, now_local):
     ort_start = extrahiere_ort(start)
+    st.write("🧪 Startort erkannt als:", ort_start)
     ort_ziel = extrahiere_ort(ziel)
+    st.write("🧪 Zielort erkannt als:", ort_ziel)
     kandidaten = []
-    for route, dauer in FAEHREN.items():
+    for route, dauer in sorted(FAEHREN.items()):
         hafen1, hafen2 = [h.strip().lower() for h in route.split("–")]
-        if (hafen1 in ort_start and hafen2 in ort_ziel) or (hafen2 in ort_start and hafen1 in ort_ziel):
+        (hafen1 in ort_start or hafen2 in ort_start)
             kandidaten.append({
                 "route": route,
                 "dauer": dauer,
@@ -90,7 +92,7 @@ if manuell_aktiv:
             st.session_state.faehren = []
         if st.button("🛳 Fähre erkannt – Vorschläge anzeigen"):
             with st.expander("Passende Fährverbindungen"):
-                auswahl = st.radio(
+                auswahl = st.selectbox(
                     "Bitte Fähre auswählen:",
                     [f"{v['route']} – {v['stunde']}:00 Uhr ({v['dauer']}h)" for v in vorschlaege],
                     index=0
