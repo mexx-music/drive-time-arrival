@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 import urllib.parse
@@ -9,8 +8,11 @@ import time
 import os
 
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
+
+# Sicherer API-Key
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
+# Fähren-Datenbank
 FAEHREN = {
     "Patras–Ancona (Superfast)": 22, "Ancona–Patras (Superfast)": 22,
     "Igoumenitsa–Bari (Grimaldi)": 10, "Bari–Igoumenitsa (Grimaldi)": 10,
@@ -75,8 +77,6 @@ def format_minutes_to_hm(minutes):
     else:
         return f"{minutes} min"
 
-# --- Hauptlogik und UI folgt als nächstes (Teil 2) ---
-
 st.title("🚛 DriverRoute ETA – mit Fähren & Wochenlenkzeit")
 
 vorgabe = st.radio("Wie viele Wochenlenkzeit stehen noch zur Verfügung?", ["Voll (56h)", "Manuell eingeben"], index=0)
@@ -96,13 +96,16 @@ if zielort:
 
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
+
 if st.button("➕ Zwischenstopp hinzufügen"):
     if len(st.session_state.zwischenstopps) < 10:
         st.session_state.zwischenstopps.append("")
+
 for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
     if st.session_state.zwischenstopps[i]:
         st.caption(f"📌 {get_place_info(st.session_state.zwischenstopps[i])}")
+
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
 now_local, local_tz = get_local_time(startort)
@@ -116,6 +119,7 @@ else:
     abfahrt_datum = st.date_input("Datum", value=now_local.date())
     abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
     abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
+
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
@@ -159,8 +163,6 @@ else:
 
 geschwindigkeit = st.number_input("🛻 Geschwindigkeit (km/h)", 60, 120, 80)
 tankpause = st.checkbox("⛽ Tankpause (30 min)?")
-
-# Der Berechnungsbutton, ETA-Logik, Kartenanzeige folgen hier...
 
 if st.button("📦 Berechnen & ETA anzeigen"):
     url = f"https://maps.googleapis.com/maps/api/directions/json?origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}&key={GOOGLE_API_KEY}"
