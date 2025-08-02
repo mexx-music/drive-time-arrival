@@ -90,7 +90,35 @@ def extrahiere_ort(address):
     except:
         return ""
 
-def finde_passende_faehre_aus_ort(start, ziel):
+
+def extrahiere_ort(address):
+    try:
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+        response = requests.get(url).json()
+        if response["status"] == "OK":
+            for comp in response["results"][0]["address_components"]:
+                if "locality" in comp["types"] or "postal_town" in comp["types"]:
+                    return comp["long_name"].lower()
+        return ""
+    except:
+        return ""
+
+def finde_passende_faehren(start, ziel):
+    ort_start = extrahiere_ort(start)
+    ort_ziel = extrahiere_ort(ziel)
+    kandidaten = []
+    for route, dauer in FAEHREN.items():
+        hafen1, hafen2 = [h.strip().lower() for h in route.split("–")]
+        if (hafen1 in ort_start and hafen2 in ort_ziel) or (hafen2 in ort_start and hafen1 in ort_ziel):
+            kandidaten.append({
+                "route": route,
+                "dauer": dauer,
+                "datum": now_local.date(),
+                "stunde": now_local.hour + 1 if now_local.hour < 23 else 8,
+                "minute": 0
+            })
+    return kandidaten
+
     ort_start = extrahiere_ort(start)
     ort_ziel = extrahiere_ort(ziel)
     for route, dauer in FAEHREN.items():
@@ -118,7 +146,29 @@ def finde_passende_faehre_aus_ort(start, ziel):
     return None
 
 if manuell_aktiv:
-    vorschlag = finde_passende_faehre_aus_ort(startort, zielort)
+    
+vorschlaege = finde_passende_faehren(startort, zielort)
+if vorschlaege:
+    if st.button("🛳 Fähre erkannt – Vorschläge anzeigen"):
+        with st.expander("Passende Fährverbindungen"):
+            auswahl = st.radio(
+                "Bitte Fähre auswählen:",
+                [f"{v['route']} – {v['stunde']}:00 Uhr ({v['dauer']}h)" for v in vorschlaege],
+                index=0
+            )
+            if "faehren" not in st.session_state:
+                st.session_state.faehren = []
+            for v in vorschlaege:
+                bezeichnung = f"{v['route']} – {v['stunde']}:00 Uhr ({v['dauer']}h)"
+                if auswahl == bezeichnung:
+                    st.session_state.faehren = [{
+                        "route": v["route"],
+                        "datum": v["datum"],
+                        "stunde": v["stunde"],
+                        "minute": v["minute"]
+                    }]
+                    st.success(f"✅ Fähre übernommen: {v['route']}")
+
     if "faehren" not in st.session_state:
         st.session_state.faehren = []
     if vorschlag and len(st.session_state.faehren) == 0:
