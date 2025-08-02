@@ -75,7 +75,31 @@ now_local, local_tz = get_local_time(startort)
 auto_faehre = ort_enthaelt_faehre(startort, zielort)
 manuell_aktiv = st.checkbox("🚢 Fähre automatisch erkennen", value=auto_faehre)
 
+
+
+def finde_passende_faehre(start, ziel):
+    start = start.lower()
+    ziel = ziel.lower()
+    for route, dauer in FAEHREN.items():
+        hafen1, hafen2 = route.lower().split("–")
+        if (hafen1 in start and hafen2 in ziel) or (hafen2 in start and hafen1 in ziel):
+            return {
+                "route": route,
+                "datum": now_local.date(),
+                "stunde": now_local.hour + 1 if now_local.hour < 23 else 8,
+                "minute": 0
+            }
+    return None
+
 if manuell_aktiv:
+    vorschlag = finde_passende_faehre(startort, zielort)
+    if "faehren" not in st.session_state:
+        st.session_state.faehren = []
+    if vorschlag and len(st.session_state.faehren) == 0:
+        st.session_state.faehren.append(vorschlag)
+        st.success("🚢 Automatisch erkannte Fähre: " + vorschlag["route"])
+    st.info("🛳 Fährenrelevante Route erkannt – bitte Fähre(n) anpassen oder ergänzen:")
+
     st.info("🛳 Fährenrelevante Route erkannt – bitte Fähre(n) angeben:")
     if "faehren" not in st.session_state:
         st.session_state.faehren = []
