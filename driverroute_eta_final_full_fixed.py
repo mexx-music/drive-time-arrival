@@ -77,7 +77,33 @@ manuell_aktiv = st.checkbox("🚢 Fähre automatisch erkennen", value=auto_faehr
 
 
 
-def finde_passende_faehre(start, ziel):
+
+def extrahiere_ort(address):
+    try:
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+        response = requests.get(url).json()
+        if response["status"] == "OK":
+            for comp in response["results"][0]["address_components"]:
+                if "locality" in comp["types"] or "postal_town" in comp["types"]:
+                    return comp["long_name"].lower()
+        return ""
+    except:
+        return ""
+
+def finde_passende_faehre_aus_ort(start, ziel):
+    ort_start = extrahiere_ort(start)
+    ort_ziel = extrahiere_ort(ziel)
+    for route, dauer in FAEHREN.items():
+        hafen1, hafen2 = [h.strip().lower() for h in route.split("–")]
+        if (hafen1 in ort_start and hafen2 in ort_ziel) or (hafen2 in ort_start and hafen1 in ort_ziel):
+            return {
+                "route": route,
+                "datum": now_local.date(),
+                "stunde": now_local.hour + 1 if now_local.hour < 23 else 8,
+                "minute": 0
+            }
+    return None
+
     start = start.lower()
     ziel = ziel.lower()
     for route, dauer in FAEHREN.items():
@@ -92,7 +118,7 @@ def finde_passende_faehre(start, ziel):
     return None
 
 if manuell_aktiv:
-    vorschlag = finde_passende_faehre(startort, zielort)
+    vorschlag = finde_passende_faehre_aus_ort(startort, zielort)
     if "faehren" not in st.session_state:
         st.session_state.faehren = []
     if vorschlag and len(st.session_state.faehren) == 0:
