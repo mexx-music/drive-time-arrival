@@ -6,10 +6,11 @@ import pytz
 import math
 import time
 
-st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
+st.set_page_config(page_title="DriverRoute ETA – Fahrplan & Fähren", layout="centered")
+
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
-# Fährenliste mit Überfahrtsdauer
+# Fährenliste mit Dauer in Stunden
 FAEHREN = {
     "Patras–Ancona (Superfast)": 22, "Ancona–Patras (Superfast)": 22,
     "Igoumenitsa–Bari (Grimaldi)": 10, "Bari–Igoumenitsa (Grimaldi)": 10,
@@ -25,25 +26,21 @@ FAEHREN = {
     "Hirtshals–Bergen (FjordLine)": 16, "Bergen–Hirtshals (FjordLine)": 16
 }
 
-def get_timezone_for_latlng(lat, lng):
-    timestamp = int(time.time())
-    tz_url = f"https://maps.googleapis.com/maps/api/timezone/json?location={lat},{lng}&timestamp={timestamp}&key={GOOGLE_API_KEY}"
-    tz_data = requests.get(tz_url).json()
-    return tz_data["timeZoneId"] if tz_data["status"] == "OK" else "Europe/Vienna"
-
 def get_timezone_for_address(address):
     if not address:
         return "Europe/Vienna"
-    geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
-    geo_data = requests.get(geo_url).json()
-    if geo_data["status"] == "OK":
-        loc = geo_data["results"][0]["geometry"]["location"]
-        return get_timezone_for_latlng(loc["lat"], loc["lng"])
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+    r = requests.get(url).json()
+    if r["status"] == "OK":
+        loc = r["results"][0]["geometry"]["location"]
+        lat, lng = loc["lat"], loc["lng"]
+        tz_url = f"https://maps.googleapis.com/maps/api/timezone/json?location={lat},{lng}&timestamp={int(time.time())}&key={GOOGLE_API_KEY}"
+        tz_data = requests.get(tz_url).json()
+        return tz_data.get("timeZoneId", "Europe/Vienna")
     return "Europe/Vienna"
 
 def get_local_time(address):
-    tz_str = get_timezone_for_address(address)
-    tz = pytz.timezone(tz_str)
+    tz = pytz.timezone(get_timezone_for_address(address))
     return datetime.now(tz), tz
 
 def get_place_info(address):
@@ -65,15 +62,53 @@ def get_place_info(address):
         return f"📌 {ort}, {plz} ({land})"
     return "❌ Ort nicht gefunden"
 
-st.title("🚛 DriverRoute ETA – mit Fähren & Fahrzeitlogik")
+def extrahiere_ort(address):
+    try:
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
+        r = requests.get(url).json()
+        for c in r["results"][0]["address_components"]:
+            if "locality" in c["types"]:
+                return c["long_name"].lower()
+    except:
+        return ""
+    return ""
+
+def finde_passende_faehren(start, ziel, now_local):
+    ort_start = extrahiere_ort(start)
+    kandidaten = []
+    for route, dauer in FAEHREN.items():
+        h1, h2 = [h.strip().lower() for h in route.split("–")]
+        if ort_start in h1 or ort_start in h2:
+            kandidaten.append({
+                "route": route,
+                "dauer": dauer,
+                "datum": now_local.date(),
+                "stunde": now_local.hour + 1 if now_local.hour < 23 else 8,
+                "minute": 0
+            })
+    return kandidaten
+
+# UI – Start
+st.title("🚛 DriverRoute ETA – Fahrplan & Fähren")
+
 startort = st.text_input("📍 Startort", "")
 zielort = st.text_input("🏁 Zielort", "")
-if startort: st.caption(get_place_info(startort))
-if zielort: st.caption(get_place_info(zielort))
+
+st.caption(get_place_info(startort))
+st.caption(get_place_info(zielort))
 
 now_local, local_tz = get_local_time(startort)
 
-# Zwischenstopps
+# Automatische Fähre erkennen
+if st.button("🚢 Fähre automatisch erkennen"):
+    faehren = finde_passende_faehren(startort, zielort, now_local)
+    if faehren:
+        for f in faehren:
+            st.success(f"🛳️ Vorschlag: {f['route']} – {f['stunde']:02}:00 ({f['dauer']} h)")
+    else:
+        st.warning("Keine passende Fähre gefunden.")
+
+# Zwischenstopps hinzufügen
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
 if st.button("➕ Zwischenstopp hinzufügen"):
@@ -94,6 +129,7 @@ else:
     abfahrt_datum = st.date_input("Datum", value=now_local.date())
     abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
     abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
+
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
@@ -108,10 +144,11 @@ with col_b:
     neuner_1 = st.checkbox("✅ 9h-Ruhepause Nr. 1", value=True)
     neuner_2 = st.checkbox("✅ 9h-Ruhepause Nr. 2", value=True)
     neuner_3 = st.checkbox("✅ 9h-Ruhepause Nr. 3", value=True)
+
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
-# Wochenruhe
+# Wochenruhepause
 wochenruhe_manuell = st.checkbox("🛌 Wochenruhepause während Tour manuell einfügen?")
 if wochenruhe_manuell:
     we_tag = st.date_input("Start der Wochenruhe", value=now_local.date(), key="we_date")
@@ -128,7 +165,7 @@ else:
 geschwindigkeit = st.number_input("🛻 Geschwindigkeit (km/h)", 60, 120, 80)
 tankpause = st.checkbox("⛽ Tankpause (30 min)?")
 
-# Fährenanzeige manuell
+# Manuelle Fährenanzeige
 faehren_anzeigen = st.checkbox("🚢 Fährverbindung(en) manuell einfügen?")
 if faehren_anzeigen:
     if "faehren" not in st.session_state:
@@ -147,6 +184,7 @@ if faehren_anzeigen:
             f["stunde"] = st.number_input(f"🕓 Stunde {idx+1}", 0, 23, f["stunde"], key=f"hour_{idx}")
             f["minute"] = st.number_input(f"🕧 Minute {idx+1}", 0, 59, f["minute"], key=f"min_{idx}")
 
+# Button zur Berechnung
 if st.button("📦 Berechnen & ETA anzeigen"):
     url = f"https://maps.googleapis.com/maps/api/directions/json?origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}&key={GOOGLE_API_KEY}"
     if zwischenstopps:
@@ -239,7 +277,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         </h2>
         """, unsafe_allow_html=True)
 
-        # Karte
+        # Karte anzeigen
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
