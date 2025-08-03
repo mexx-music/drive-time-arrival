@@ -43,12 +43,7 @@ FAHRPLAN = {
         "gesellschaft": "Grimaldi",
         "dauer_stunden": 19,
         "abfahrten": ["06:00", "16:00"]
-    }
-}
-,
-    # ... (restlicher Fahrplan wird in Teil 3 fortgesetzt)
-}
-
+    },
     "Patras–Bari (Grimaldi)": {
         "gesellschaft": "Grimaldi",
         "dauer_stunden": 18,
