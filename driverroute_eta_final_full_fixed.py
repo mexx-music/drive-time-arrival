@@ -169,15 +169,19 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         log, z_i, n_i, used_tank, f_i = [], 0, 0, False, 0
 
         while remaining > 0:
+            
+# 🚢 Immer Fähre einbauen, auch bei kleinen Zeitabweichungen
             if f_i < len(faehren):
                 f = faehren[f_i]
                 f_start = local_tz.localize(datetime.combine(f["datum"], datetime.strptime(f"{f['stunde']}:{f['minute']}", "%H:%M").time()))
                 f_dauer = FAEHREN[f["route"]]
-                if current_time <= f_start:
+
+                if current_time <= f_start or abs((current_time - f_start).total_seconds()) < 3600:
                     if current_time < f_start:
                         warte = int((f_start - current_time).total_seconds() / 60)
                         log.append(f"⏳ Warten auf Fähre {f['route']} bis {f_start.strftime('%Y-%m-%d %H:%M')} ({warte} min)")
-                    f_ende = f_start + timedelta(hours=f_dauer)
+                        current_time = f_start
+                    f_ende = current_time + timedelta(hours=f_dauer)
                     log.append(f"🚢 **Fähre {f['route']}**: {f_dauer}h → Ankunft {f_ende.strftime('%Y-%m-%d %H:%M')}")
                     current_time = f_ende
                     f_i += 1
