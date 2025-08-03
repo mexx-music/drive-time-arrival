@@ -1,3 +1,5 @@
+# 🚛 DriverRoute ETA – Finalversion (mit automatischer Ancona-Ergänzung nach Fähre)
+
 import streamlit as st
 import requests
 import urllib.parse
@@ -10,6 +12,17 @@ st.set_page_config(page_title="DriverRoute ETA – Finalversion", layout="center
 
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
+# Beispielhafte Korrektur: Wenn bestimmte Fährziele erkannt werden, Zwischenstopp automatisch ergänzen
+def auto_add_ferry_stop(start, ziel, zwischenstopps, aktive_faehren):
+    extra_stops = []
+    for f in aktive_faehren:
+        if "Ancona" in f["route"] and "Ancona" not in zwischenstopps and "Ancona" not in [start, ziel]:
+            extra_stops.append("Ancona")
+        if "Trelleborg" in f["route"] and "Trelleborg" not in zwischenstopps and "Trelleborg" not in [start, ziel]:
+            extra_stops.append("Trelleborg")
+    return zwischenstopps + extra_stops
+
+# 📦 Fahrplandaten mit echten Abfahrten
 FAHRPLAN = {
     "Patras–Ancona (Superfast)": {
         "gesellschaft": "Superfast",
@@ -51,6 +64,9 @@ FAHRPLAN = {
         "dauer_stunden": 9,
         "abfahrten": ["07:00", "14:00", "20:00"]
     },
+    # ... (restlicher Fahrplan wird in Teil 3 fortgesetzt)
+}
+
     "Patras–Bari (Grimaldi)": {
         "gesellschaft": "Grimaldi",
         "dauer_stunden": 18,
@@ -200,7 +216,6 @@ def segmentiere_route(start, ziel, zwischenstopps, faehre_name):
 
     return abschnitt_1, faehre, abschnitt_2
 
-
 # 🟢 UI: Start + Ziel + Zwischenstopps
 st.title("🚛 DriverRoute ETA – Finalversion")
 
@@ -260,6 +275,9 @@ elif auto_faehren_erlaubt:
                     "dauer": daten["dauer_stunden"],
                     "abfahrten": daten["abfahrten"]
                 })
+
+# Zwischenstopps ggf. automatisch ergänzen bei relevanten Fähren
+zwischenstopps = auto_add_ferry_stop(startort, zielort, zwischenstopps, aktive_faehren)
 
 # 🕒 Abfahrtszeit
 st.subheader("🕒 Abfahrtszeit planen")
