@@ -140,6 +140,35 @@ else:
             "minute": 0
         })
 
+
+# 🧭 Automatisch Zwischenstopps aus Fähren generieren (z. B. „Patras Hafen“)
+def haefen_aus_faehre_einbauen():
+    if "zwischenstopps" not in st.session_state:
+        st.session_state.zwischenstopps = []
+    bekannte_orte = {
+        "Patras": "Patras, Griechenland",
+        "Ancona": "Ancona, Italien",
+        "Igoumenitsa": "Igoumenitsa, Griechenland",
+        "Bari": "Bari, Italien",
+        "Brindisi": "Brindisi, Italien",
+        "Trelleborg": "Trelleborg, Schweden",
+        "Rostock": "Rostock, Deutschland",
+        "Travemünde": "Travemünde, Deutschland",
+        "Kiel": "Kiel, Deutschland",
+        "Oslo": "Oslo, Norwegen",
+        "Hirtshals": "Hirtshals, Dänemark",
+        "Bergen": "Bergen, Norwegen",
+        "Stavanger": "Stavanger, Norwegen"
+    }
+    for f in faehren:
+        h1, h2 = f["route"].split("–")
+        h1_name = bekannte_orte.get(h1.strip(), h1.strip())
+        h2_name = bekannte_orte.get(h2.strip(), h2.strip())
+        if h1_name not in st.session_state.zwischenstopps:
+            st.session_state.zwischenstopps.append(h1_name)
+        if h2_name not in st.session_state.zwischenstopps:
+            st.session_state.zwischenstopps.append(h2_name)
+
 # Sichtbare Fährenübersicht
 if faehren:
     st.markdown("### 🛳️ Gewählte Fährverbindung(en):")
@@ -179,10 +208,20 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 if current_time <= f_start or abs((current_time - f_start).total_seconds()) < 3600:
                     if current_time < f_start:
                         warte = int((f_start - current_time).total_seconds() / 60)
-                        log.append(f"⏳ Warten auf Fähre {f['route']} bis {f_start.strftime('%Y-%m-%d %H:%M')} ({warte} min)")
+                        log.append(f"""
+<div style='background-color:#f0f8ff;padding:10px;border-left:5px solid #3399ff;'>
+⏳ <b>Warten auf Fähre {f['route']}</b><br>
+bis <b>{f_start.strftime('%Y-%m-%d – %H:%M')}</b> ({warte} min)
+</div>
+""")
                         current_time = f_start
                     f_ende = current_time + timedelta(hours=f_dauer)
-                    log.append(f"🚢 **Fähre {f['route']}**: {f_dauer}h → Ankunft {f_ende.strftime('%Y-%m-%d %H:%M')}")
+                    log.append(f"""
+<div style='background-color:#e6f2ff;padding:10px;border-left:5px solid #3399ff;'>
+🛳️ <b>Fähre {f['route']}</b><br>
+🚢 Überfahrt: <b>{f_dauer} h</b> → Ankunft: <b>{f_ende.strftime('%Y-%m-%d – %H:%M')}</b>
+</div>
+""")
                     current_time = f_ende
                     f_i += 1
                     continue
@@ -212,7 +251,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if n_i < 3: n_i += 1
 
         st.markdown("## 📋 Fahrplan:")
-        for eintrag in log: st.markdown(eintrag)
+        for eintrag in log: st.markdown(eintrag, unsafe_allow_html=True)
         st.markdown(f"<h2 style='text-align: center;'>🕓 Ankunft: <b>{current_time.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>", unsafe_allow_html=True)
 
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
