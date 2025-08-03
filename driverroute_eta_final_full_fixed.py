@@ -1,5 +1,3 @@
-# 🚛 DriverRoute ETA – Mexx Max-Version (ETA korrigiert)
-
 import streamlit as st
 import requests
 import urllib.parse
@@ -61,7 +59,7 @@ def entfernung_schaetzung(start, ziel, zwischenstopps=[]):
     except:
         return None
 
-# UI-Bereich
+# UI – Eingabe Start/Ziel
 st.title("🚛 DriverRoute ETA – Mexx-Version")
 
 col1, col2 = st.columns(2)
@@ -70,7 +68,6 @@ zielort = col2.text_input("🏁 Zielort oder PLZ", "")
 
 now_local, local_tz = get_local_time(startort)
 
-# Zusatzanzeige PLZ-Ort
 def get_place_info(address):
     if not address:
         return "❌ Ungültiger Ort"
@@ -108,7 +105,7 @@ else:
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
-# Zwischenstopps
+# Zwischenstopps mit Ortsanzeige
 st.markdown("### ➕ Zwischenstopps")
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
@@ -118,14 +115,34 @@ if st.button("➕ Zwischenstopp hinzufügen"):
 for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
+for stop in zwischenstopps:
+    st.caption(f"Zwischenstopp: {get_place_info(stop)}")
 
-# Fährenoption
+# Fährenlogik: Auswahl
 st.markdown("### 🛳️ Fährlogik")
 col_f1, col_f2 = st.columns([2, 1])
 manuelle_faehre = col_f1.selectbox("Manuelle Fährwahl (optional)", ["Keine"] + list(FAEHREN.keys()))
 auto_faehre = col_f2.checkbox("🚢 Fähre automatisch erkennen", value=True)
 
-# 10h/9h Optionen
+aktive_faehren = []
+vorauswahl_fehren = []
+
+if manuelle_faehre != "Keine":
+    aktive_faehren = [{"route": manuelle_faehre, "dauer": FAEHREN[manuelle_faehre]}]
+else:
+    if auto_faehre:
+        for name, dauer in FAEHREN.items():
+            h1, h2 = name.lower().split("–")
+            if h1 in startort.lower() or h2 in startort.lower() or any(h1 in s.lower() or h2 in s.lower() for s in zwischenstopps):
+                vorauswahl_fehren.append((name, dauer))
+
+if vorauswahl_fehren:
+    st.markdown("### ✅ Passende Fähren – bitte bestätigen:")
+    for name, dauer in vorauswahl_fehren:
+        if st.checkbox(f"✔ {name} ({dauer} h)", key=f"chk_{name}"):
+            aktive_faehren.append({"route": name, "dauer": dauer})
+
+# Fahrzeitoptionen
 col_a, col_b = st.columns(2)
 with col_a:
     st.subheader("🟩 10h-Fahrten (max. 2)")
@@ -140,7 +157,7 @@ with col_b:
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
-# Wochenruhe
+# Wochenruheoption
 st.markdown("### 🛌 Wochenruhepause (optional)")
 wochenruhe_manuell = st.checkbox("Wöchentliche Ruhezeit während der Tour einfügen?")
 if wochenruhe_manuell:
@@ -157,7 +174,7 @@ else:
 geschwindigkeit = st.number_input("🛻 Durchschnittsgeschwindigkeit (km/h)", 60, 120, 80)
 tankpause = st.checkbox("⛽ Tankpause (30 min)?")
 
-# Berechnung starten
+# Button – Berechnung
 if st.button("📦 Berechnen & ETA anzeigen"):
     km = entfernung_schaetzung(startort, zielort, zwischenstopps)
     if km is None:
@@ -172,16 +189,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         zehner_index = 0
         neuner_index = 0
         used_tank = False
-
-        aktive_faehren = []
-        if manuelle_faehre != "Keine":
-            aktive_faehren = [{"route": manuelle_faehre, "dauer": FAEHREN[manuelle_faehre]}]
-        elif auto_faehre:
-            for name, dauer in FAEHREN.items():
-                h1, h2 = name.lower().split("–")
-                if h1 in startort.lower() or h2 in startort.lower():
-                    aktive_faehren.append({"route": name, "dauer": dauer})
-
         fähre_index = 0
         letzte_fahrt_ende = None
 
@@ -228,37 +235,18 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if zehner_index < 2: zehner_index += 1
             if neuner_index < 3: neuner_index += 1
 
-        # Fahrplananzeige
+        # Ausgabe Fahrplan
         st.markdown("## 📋 Fahrplan")
         for eintrag in log:
             st.markdown(eintrag)
 
+        # Verbleibend
         verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
         verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
         st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
 
         ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-        letzte_weiterfahrt = None
-        letzte_ankunft = letzte_fahrt_ende.astimezone(ziel_tz) if letzte_fahrt_ende else current_time.astimezone(ziel_tz)
-
-        for eintrag in reversed(log):
-            if eintrag.startswith("🌙 Ruhezeit") and "Neustart" in eintrag:
-                try:
-                    ts = eintrag.split("Neustart: ")[1]
-                    letzte_weiterfahrt = local_tz.localize(datetime.strptime(ts, "%Y-%m-%d %H:%M")).astimezone(ziel_tz)
-                    break
-                except:
-                    pass
-
-        if not letzte_weiterfahrt:
-            letzte_weiterfahrt = letzte_ankunft - timedelta(hours=2)
-
-        st.markdown("## 🕓 Zeitplanübersicht")
-        st.markdown(
-            f"🟡 <b>Weiterfahrt nach letzter Pause:</b> {letzte_weiterfahrt.strftime('%A, %d.%m.%Y – %H:%M')}<br>"
-            f"✅ <b>Endgültige Ankunft:</b> {letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}<br>"
-            f"({ziel_tz.zone})",
-            unsafe_allow_html=True)
+        letzte_ankunft = letzte_fahrt_ende.astimezone(ziel_tz)
 
         st.markdown(
             f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
@@ -266,7 +254,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             f"({ziel_tz.zone})</h2>",
             unsafe_allow_html=True)
 
-        # Google Map
+        # Karte
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
