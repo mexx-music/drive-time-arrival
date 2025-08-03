@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 import urllib.parse
@@ -6,38 +5,27 @@ from datetime import datetime, timedelta
 import pytz
 import math
 import time
+import os
 
 st.set_page_config(page_title="DriverRoute ETA – mit Fähren", layout="centered")
-GOOGLE_API_KEY = "AIzaSyDz4Fi--qUWvy7OhG1nZhnEWQgtmubCy8g"
+
+# Sicherer API-Key
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
 # Fähren-Datenbank
 FAEHREN = {
-    "Patras–Ancona (Superfast)": 22,
-    "Ancona–Patras (Superfast)": 22,
-    "Igoumenitsa–Bari (Grimaldi)": 10,
-    "Bari–Igoumenitsa (Grimaldi)": 10,
-    "Igoumenitsa–Brindisi (Grimaldi)": 9,
-    "Brindisi–Igoumenitsa (Grimaldi)": 9,
-    "Igoumenitsa–Ancona (Superfast)": 20,
-    "Ancona–Igoumenitsa (Superfast)": 20,
-    "Patras–Bari (Grimaldi)": 18,
-    "Bari–Patras (Grimaldi)": 18,
-    "Patras–Brindisi (Grimaldi)": 19,
-    "Brindisi–Patras (Grimaldi)": 19,
-    "Trelleborg–Travemünde (TT-Line)": 9,
-    "Travemünde–Trelleborg (TT-Line)": 9,
-    "Trelleborg–Rostock (TT-Line)": 6.5,
-    "Rostock–Trelleborg (TT-Line)": 6.5,
-    "Trelleborg–Kiel (TT-Line)": 10,
-    "Kiel–Trelleborg (TT-Line)": 10,
-    "Kiel–Oslo (Color Line)": 20,
-    "Oslo–Kiel (Color Line)": 20,
-    "Hirtshals–Stavanger (Color Line)": 11,
-    "Stavanger–Hirtshals (Color Line)": 11,
-    "Hirtshals–Bergen (Color Line)": 15,
-    "Bergen–Hirtshals (Color Line)": 15,
-    "Gothenburg–Kiel (Stena Line)": 14,
-    "Kiel–Gothenburg (Stena Line)": 14
+    "Patras–Ancona (Superfast)": 22, "Ancona–Patras (Superfast)": 22,
+    "Igoumenitsa–Bari (Grimaldi)": 10, "Bari–Igoumenitsa (Grimaldi)": 10,
+    "Igoumenitsa–Brindisi (Grimaldi)": 9, "Brindisi–Igoumenitsa (Grimaldi)": 9,
+    "Igoumenitsa–Ancona (Superfast)": 20, "Ancona–Igoumenitsa (Superfast)": 20,
+    "Patras–Bari (Grimaldi)": 18, "Bari–Patras (Grimaldi)": 18,
+    "Patras–Brindisi (Grimaldi)": 19, "Brindisi–Patras (Grimaldi)": 19,
+    "Trelleborg–Travemünde (TT-Line)": 9, "Travemünde–Trelleborg (TT-Line)": 9,
+    "Trelleborg–Rostock (TT-Line)": 6.5, "Rostock–Trelleborg (TT-Line)": 6.5,
+    "Trelleborg–Kiel (TT-Line)": 13, "Kiel–Trelleborg (TT-Line)": 13,
+    "Color Line Kiel–Oslo": 20, "Color Line Oslo–Kiel": 20,
+    "Hirtshals–Stavanger (FjordLine)": 10, "Stavanger–Hirtshals (FjordLine)": 10,
+    "Hirtshals–Bergen (FjordLine)": 16, "Bergen–Hirtshals (FjordLine)": 16
 }
 
 def get_timezone_for_latlng(lat, lng):
@@ -47,6 +35,9 @@ def get_timezone_for_latlng(lat, lng):
     return tz_data["timeZoneId"] if tz_data["status"] == "OK" else "Europe/Vienna"
 
 def get_timezone_for_address(address):
+    if not address:
+        return "Europe/Vienna"
+    address = str(address)
     geo_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
     geo_data = requests.get(geo_url).json()
     if geo_data["status"] == "OK":
@@ -59,9 +50,35 @@ def get_local_time(address):
     tz = pytz.timezone(tz_str)
     return datetime.now(tz), tz
 
+def get_place_info(address):
+    if not address:
+        return "❌ Ungültiger Ort"
+    adresse = str(address)
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(adresse)}&key={GOOGLE_API_KEY}"
+    r = requests.get(url).json()
+    if r["status"] == "OK":
+        result = r["results"][0]
+        components = result["address_components"]
+        plz = ort = land = ""
+        for comp in components:
+            if "postal_code" in comp["types"]:
+                plz = comp["long_name"]
+            if "locality" in comp["types"] or "postal_town" in comp["types"]:
+                ort = comp["long_name"]
+            if "country" in comp["types"]:
+                land = comp["long_name"]
+        return f"📌 {ort}, {plz} ({land})"
+    return "❌ Ort nicht gefunden"
+
+def format_minutes_to_hm(minutes):
+    if minutes >= 60:
+        h, m = divmod(minutes, 60)
+        return f"{h}h{m}" if m > 0 else f"{h}h"
+    else:
+        return f"{minutes} min"
+
 st.title("🚛 DriverRoute ETA – mit Fähren & Wochenlenkzeit")
 
-# Wochenlenkzeit
 vorgabe = st.radio("Wie viele Wochenlenkzeit stehen noch zur Verfügung?", ["Voll (56h)", "Manuell eingeben"], index=0)
 if vorgabe == "Voll (56h)":
     verfügbare_woche = 3360
@@ -70,9 +87,13 @@ else:
     verfügbare_woche = int(verfügbare_woche_stunden * 60)
 
 startort = st.text_input("📍 Startort", "Volos, Griechenland")
-zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
+if startort:
+    st.caption(get_place_info(startort))
 
-# Zwischenstopps
+zielort = st.text_input("🏁 Zielort", "Saarlouis, Deutschland")
+if zielort:
+    st.caption(get_place_info(zielort))
+
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
 
@@ -82,13 +103,13 @@ if st.button("➕ Zwischenstopp hinzufügen"):
 
 for i in range(len(st.session_state.zwischenstopps)):
     st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+    if st.session_state.zwischenstopps[i]:
+        st.caption(f"📌 {get_place_info(st.session_state.zwischenstopps[i])}")
 
 zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
 
-# Abfahrtszeit
 now_local, local_tz = get_local_time(startort)
 pause_aktiv = st.checkbox("Ich bin in Pause – Abfahrt um ...")
-
 if pause_aktiv:
     abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
     abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
@@ -102,15 +123,12 @@ else:
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
-# Fährbereich (optional)
 faehren_anzeigen = st.checkbox("🚢 Fährverbindung(en) hinzufügen?")
 if faehren_anzeigen:
     if "faehren" not in st.session_state:
         st.session_state.faehren = []
-
     if st.button("➕ Fähre hinzufügen"):
         st.session_state.faehren.append({"route": list(FAEHREN.keys())[0], "datum": now_local.date(), "stunde": 12, "minute": 0})
-
     for idx, f in enumerate(st.session_state.faehren):
         with st.expander(f"Fähre {idx+1}"):
             f["route"] = st.selectbox(f"🛳 Route {idx+1}", list(FAEHREN.keys()), index=list(FAEHREN.keys()).index(f["route"]), key=f"route_{idx}")
@@ -128,7 +146,6 @@ with col_b:
     neuner_1 = st.checkbox("✅ 9h-Ruhepause Nr. 1", value=True)
     neuner_2 = st.checkbox("✅ 9h-Ruhepause Nr. 2", value=True)
     neuner_3 = st.checkbox("✅ 9h-Ruhepause Nr. 3", value=True)
-
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
@@ -168,7 +185,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         neuner_index = 0
         used_tank = False
         fähre_index = 0
-        fähren_eingebaut = []
 
         while remaining > 0:
             if faehren_anzeigen and fähre_index < len(st.session_state.faehren):
@@ -179,7 +195,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                     f_ende = f_start + timedelta(hours=f_dauer)
                     log.append(f"🚢 Fähre {f['route']}: {f_dauer} h → Ankunft {f_ende.strftime('%Y-%m-%d %H:%M')}")
                     current_time = f_ende
-                    fähren_eingebaut.append(f["route"])
                     fähre_index += 1
                     continue
 
@@ -202,7 +217,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 pausen += 30
                 used_tank = True
             ende = current_time + timedelta(minutes=gefahren + pausen)
-            log.append(f"📆 {current_time.strftime('%A %H:%M')} → {int(gefahren)} min + {pausen} min Pause → Ende: {ende.strftime('%H:%M')}")
+            log.append(f"📆 {current_time.strftime('%A %H:%M')} → {format_minutes_to_hm(gefahren)} + {format_minutes_to_hm(pausen)} Pause → Ende: {ende.strftime('%H:%M')}")
             remaining -= gefahren
 
             if remaining <= 0:
@@ -215,8 +230,13 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if neuner_index < 3: neuner_index += 1
 
         st.markdown("## 📋 Fahrplan:")
-        for eintrag in log:
-            st.markdown(eintrag)
+        for i, eintrag in enumerate(log):
+            if "→ Ende:" in eintrag and i == len(log) - 2:
+                time_part = eintrag.split("→ Ende:")[-1].strip()
+                eintrag = eintrag.replace(time_part, f"<b><span style='color: green'>{time_part}</span></b>")
+                st.markdown(eintrag, unsafe_allow_html=True)
+            else:
+                st.markdown(eintrag)
 
         verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
         verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
@@ -232,12 +252,12 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             st.info(f"🧭 Verbleibende Wochenlenkzeit: {h}h {m}min")
 
         ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-        ende_zielzeit = current_time.astimezone(ziel_tz)
+        letzte_zeit = ende.astimezone(ziel_tz)
 
         st.markdown(f"""
         <h2 style='text-align: center; color: green;'>
         ✅ <u>Ankunftszeit:</u><br>
-        🕓 <b>{ende_zielzeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
+        🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>
         ({ziel_tz.zone})
         </h2>
         """, unsafe_allow_html=True)
@@ -246,6 +266,5 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         if zwischenstopps:
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
             map_url += f"&waypoints={waypoints_encoded}"
-
         st.markdown("### 🗺️ Routenkarte:")
         st.components.v1.iframe(map_url, height=500)
