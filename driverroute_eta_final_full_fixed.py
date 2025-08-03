@@ -24,46 +24,28 @@ def auto_add_ferry_stop(start, ziel, zwischenstopps, aktive_faehren):
 
 # 📦 Fahrplandaten mit echten Abfahrten
 FAHRPLAN = {
-    "Patras–Ancona (Superfast)": {
-        "gesellschaft": "Superfast",
-        "dauer_stunden": 22,
-        "abfahrten": ["08:00", "17:30", "22:00"]
-    },
-    "Ancona–Patras (Superfast)": {
-        "gesellschaft": "Superfast",
-        "dauer_stunden": 22,
-        "abfahrten": ["08:00", "17:30", "22:00"]
-    },
-    "Igoumenitsa–Ancona (Superfast)": {
-        "gesellschaft": "Superfast",
-        "dauer_stunden": 20,
-        "abfahrten": ["06:30", "13:30", "20:00"]
-    },
-    "Ancona–Igoumenitsa (Superfast)": {
-        "gesellschaft": "Superfast",
-        "dauer_stunden": 20,
-        "abfahrten": ["06:30", "13:30", "20:00"]
-    },
-    "Igoumenitsa–Bari (Grimaldi)": {
+    "Patras–Bari (Grimaldi)": {
         "gesellschaft": "Grimaldi",
-        "dauer_stunden": 10,
-        "abfahrten": ["12:00", "18:00", "23:59"]
+        "dauer_stunden": 18,
+        "abfahrten": ["10:00", "19:00"]
     },
-    "Bari–Igoumenitsa (Grimaldi)": {
+    "Bari–Patras (Grimaldi)": {
         "gesellschaft": "Grimaldi",
-        "dauer_stunden": 10,
-        "abfahrten": ["10:00", "17:00", "22:00"]
+        "dauer_stunden": 18,
+        "abfahrten": ["08:00", "17:00"]
     },
-    "Igoumenitsa–Brindisi (Grimaldi)": {
+    "Patras–Brindisi (Grimaldi)": {
         "gesellschaft": "Grimaldi",
-        "dauer_stunden": 9,
-        "abfahrten": ["08:00", "15:00", "21:30"]
+        "dauer_stunden": 19,
+        "abfahrten": ["07:00", "15:00"]
     },
-    "Brindisi–Igoumenitsa (Grimaldi)": {
+    "Brindisi–Patras (Grimaldi)": {
         "gesellschaft": "Grimaldi",
-        "dauer_stunden": 9,
-        "abfahrten": ["07:00", "14:00", "20:00"]
-    },
+        "dauer_stunden": 19,
+        "abfahrten": ["06:00", "16:00"]
+    }
+}
+,
     # ... (restlicher Fahrplan wird in Teil 3 fortgesetzt)
 }
 
