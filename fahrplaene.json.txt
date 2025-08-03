@@ -1,0 +1,22 @@
+{
+  "Patras–Ancona (Superfast)": {
+    "gesellschaft": "Superfast",
+    "dauer_stunden": 22,
+    "abfahrten": ["17:30"]
+  },
+  "Ancona–Patras (Superfast)": {
+    "gesellschaft": "Superfast",
+    "dauer_stunden": 22,
+    "abfahrten": ["17:30"]
+  },
+  "Trelleborg–Travemünde (TT-Line)": {
+    "gesellschaft": "TT-Line",
+    "dauer_stunden": 9,
+    "abfahrten": ["07:00", "15:00", "23:30"]
+  },
+  "Rostock–Trelleborg (TT-Line)": {
+    "gesellschaft": "TT-Line",
+    "dauer_stunden": 6.5,
+    "abfahrten": ["11:00", "22:00"]
+  }
+}
