@@ -1,4 +1,4 @@
-# 🚛 DriverRoute ETA – Mexx Max-Version
+# 🚛 DriverRoute ETA – Mexx Max-Version (ETA korrigiert)
 
 import streamlit as st
 import requests
@@ -7,15 +7,12 @@ from datetime import datetime, timedelta
 import pytz
 import math
 import time
-
-from streamlit_folium import st_folium
 import folium
+from streamlit_folium import st_folium
 
 st.set_page_config(page_title="DriverRoute ETA – Mexx-Version", layout="centered")
-
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
-# Vereinheitlichte Fährenliste
 FAEHREN = {
     "Patras–Ancona (Superfast)": 22, "Ancona–Patras (Superfast)": 22,
     "Igoumenitsa–Ancona (Superfast)": 20, "Ancona–Igoumenitsa (Superfast)": 20,
@@ -31,7 +28,6 @@ FAEHREN = {
     "Hirtshals–Bergen (FjordLine)": 16, "Bergen–Hirtshals (FjordLine)": 16
 }
 
-# Zeitzonen-Handling via Google
 def get_timezone_for_address(address):
     if not address:
         return "Europe/Vienna"
@@ -49,8 +45,23 @@ def get_local_time(address):
     tz = pytz.timezone(get_timezone_for_address(address))
     return datetime.now(tz), tz
 
+def entfernung_schaetzung(start, ziel, zwischenstopps=[]):
+    try:
+        base = f"https://maps.googleapis.com/maps/api/directions/json?origin={urllib.parse.quote(start)}&destination={urllib.parse.quote(ziel)}"
+        if zwischenstopps:
+            waypoints = "|".join([urllib.parse.quote(p) for p in zwischenstopps])
+            base += f"&waypoints={waypoints}"
+        base += f"&key={GOOGLE_API_KEY}"
+        data = requests.get(base).json()
+        if data["status"] == "OK":
+            legs = data["routes"][0]["legs"]
+            return round(sum(leg["distance"]["value"] for leg in legs) / 1000, 1)
+        else:
+            return None
+    except:
+        return None
 
-# UI – Startseite
+# UI-Bereich
 st.title("🚛 DriverRoute ETA – Mexx-Version")
 
 col1, col2 = st.columns(2)
@@ -59,7 +70,7 @@ zielort = col2.text_input("🏁 Zielort oder PLZ", "")
 
 now_local, local_tz = get_local_time(startort)
 
-# Zusatzanzeige: Aktueller Ort (optional)
+# Zusatzanzeige PLZ-Ort
 def get_place_info(address):
     if not address:
         return "❌ Ungültiger Ort"
@@ -82,7 +93,7 @@ def get_place_info(address):
 st.caption(get_place_info(startort))
 st.caption(get_place_info(zielort))
 
-# ⏱ Startzeit / Abfahrt
+# Abfahrtszeit
 st.subheader("🕒 Abfahrtszeit planen")
 pause_aktiv = st.checkbox("Ich bin gerade in Pause – Abfahrt folgt:")
 if pause_aktiv:
@@ -97,7 +108,7 @@ else:
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
-# Dynamische Zwischenstopps
+# Zwischenstopps
 st.markdown("### ➕ Zwischenstopps")
 if "zwischenstopps" not in st.session_state:
     st.session_state.zwischenstopps = []
@@ -114,7 +125,7 @@ col_f1, col_f2 = st.columns([2, 1])
 manuelle_faehre = col_f1.selectbox("Manuelle Fährwahl (optional)", ["Keine"] + list(FAEHREN.keys()))
 auto_faehre = col_f2.checkbox("🚢 Fähre automatisch erkennen", value=True)
 
-# Lenkzeitkästchen
+# 10h/9h Optionen
 col_a, col_b = st.columns(2)
 with col_a:
     st.subheader("🟩 10h-Fahrten (max. 2)")
@@ -129,7 +140,7 @@ with col_b:
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
-# Wochenruhe einbauen
+# Wochenruhe
 st.markdown("### 🛌 Wochenruhepause (optional)")
 wochenruhe_manuell = st.checkbox("Wöchentliche Ruhezeit während der Tour einfügen?")
 if wochenruhe_manuell:
@@ -143,28 +154,8 @@ else:
     we_start = None
     we_ende = None
 
-# Zusatzoptionen
 geschwindigkeit = st.number_input("🛻 Durchschnittsgeschwindigkeit (km/h)", 60, 120, 80)
 tankpause = st.checkbox("⛽ Tankpause (30 min)?")
-
-
-
-# Vereinfachte Entfernungsschätzung über Google Directions
-def entfernung_schaetzung(start, ziel, zwischenstopps=[]):
-    try:
-        base = f"https://maps.googleapis.com/maps/api/directions/json?origin={urllib.parse.quote(start)}&destination={urllib.parse.quote(ziel)}"
-        if zwischenstopps:
-            waypoints = "|".join([urllib.parse.quote(p) for p in zwischenstopps])
-            base += f"&waypoints={waypoints}"
-        base += f"&key={GOOGLE_API_KEY}"
-        data = requests.get(base).json()
-        if data["status"] == "OK":
-            legs = data["routes"][0]["legs"]
-            return round(sum(leg["distance"]["value"] for leg in legs) / 1000, 1)
-        else:
-            return None
-    except:
-        return None
 
 # Berechnung starten
 if st.button("📦 Berechnen & ETA anzeigen"):
@@ -182,7 +173,6 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         neuner_index = 0
         used_tank = False
 
-        # Fährenliste
         aktive_faehren = []
         if manuelle_faehre != "Keine":
             aktive_faehren = [{"route": manuelle_faehre, "dauer": FAEHREN[manuelle_faehre]}]
@@ -193,22 +183,21 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                     aktive_faehren.append({"route": name, "dauer": dauer})
 
         fähre_index = 0
+        letzte_fahrt_ende = None
+
         while remaining > 0:
-            # Wochenruhe aktiv?
-            if we_start and current_time >= we_start and current_time < we_ende:
+            if we_start and we_start <= current_time < we_ende:
                 current_time = we_ende
                 zehner_index = 0
                 neuner_index = 0
                 log.append(f"🛌 Wochenruhe von {we_start.strftime('%Y-%m-%d %H:%M')} bis {we_ende.strftime('%Y-%m-%d %H:%M')}")
                 continue
 
-            # Wochenreset Montag ab 2 Uhr
             if current_time.weekday() == 0 and current_time.hour >= 2:
                 zehner_index = 0
                 neuner_index = 0
                 log.append("🔄 Wochenreset: Montag ab 02:00")
 
-            # Fähre einfügen?
             if fähre_index < len(aktive_faehren):
                 faehre = aktive_faehren[fähre_index]
                 dauer = faehre["dauer"]
@@ -226,8 +215,9 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 used_tank = True
 
             ende = current_time + timedelta(minutes=gefahren + pausen)
-            log.append(f"📆 {current_time.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60} + {pausen} min Pause → {ende.strftime('%H:%M')}")
+            log.append(f"📆 {current_time.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min Pause → {ende.strftime('%H:%M')}")
             remaining -= gefahren
+            letzte_fahrt_ende = ende
 
             if remaining <= 0:
                 break
@@ -238,7 +228,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if zehner_index < 2: zehner_index += 1
             if neuner_index < 3: neuner_index += 1
 
-        # Ergebnisanzeige
+        # Fahrplananzeige
         st.markdown("## 📋 Fahrplan")
         for eintrag in log:
             st.markdown(eintrag)
@@ -248,12 +238,35 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
 
         ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-        letzte_zeit = current_time.astimezone(ziel_tz)
+        letzte_weiterfahrt = None
+        letzte_ankunft = letzte_fahrt_ende.astimezone(ziel_tz) if letzte_fahrt_ende else current_time.astimezone(ziel_tz)
+
+        for eintrag in reversed(log):
+            if eintrag.startswith("🌙 Ruhezeit") and "Neustart" in eintrag:
+                try:
+                    ts = eintrag.split("Neustart: ")[1]
+                    letzte_weiterfahrt = local_tz.localize(datetime.strptime(ts, "%Y-%m-%d %H:%M")).astimezone(ziel_tz)
+                    break
+                except:
+                    pass
+
+        if not letzte_weiterfahrt:
+            letzte_weiterfahrt = letzte_ankunft - timedelta(hours=2)
+
+        st.markdown("## 🕓 Zeitplanübersicht")
         st.markdown(
-            f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>🕓 <b>{letzte_zeit.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>({ziel_tz.zone})</h2>",
+            f"🟡 <b>Weiterfahrt nach letzter Pause:</b> {letzte_weiterfahrt.strftime('%A, %d.%m.%Y – %H:%M')}<br>"
+            f"✅ <b>Endgültige Ankunft:</b> {letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}<br>"
+            f"({ziel_tz.zone})",
             unsafe_allow_html=True)
 
-        # Karte
+        st.markdown(
+            f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
+            f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>"
+            f"({ziel_tz.zone})</h2>",
+            unsafe_allow_html=True)
+
+        # Google Map
         map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
         if zwischenstopps:
             waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
