@@ -90,6 +90,40 @@ def get_place_info(address):
 st.caption(get_place_info(startort))
 st.caption(get_place_info(zielort))
 
+# Zwischenstopps
+st.markdown("### ➕ Zwischenstopps")
+if "zwischenstopps" not in st.session_state:
+    st.session_state.zwischenstopps = []
+if st.button("➕ Zwischenstopp hinzufügen"):
+    if len(st.session_state.zwischenstopps) < 10:
+        st.session_state.zwischenstopps.append("")
+for i in range(len(st.session_state.zwischenstopps)):
+    st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
+zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
+for stop in zwischenstopps:
+    st.caption(f"Zwischenstopp: {get_place_info(stop)}")
+
+# Fähren erkennen (verbessert: 'or' statt 'and') + manuelle Auswahl optional
+st.markdown("### 🛳️ Fährlogik")
+manuelle_faehre = st.selectbox("Manuelle Fährwahl (optional)", ["Keine"] + list(FAEHREN.keys()))
+auto_faehren_erlaubt = st.checkbox("🚢 Automatische Fährenerkennung aktivieren", value=True)
+
+aktive_faehren = []
+if manuelle_faehre != "Keine":
+    aktive_faehren = [{"route": manuelle_faehre, "dauer": FAEHREN[manuelle_faehre]}]
+elif auto_faehren_erlaubt:
+    passende = []
+    for name, dauer in FAEHREN.items():
+        h1, h2 = name.lower().split("–")
+        route_orte = [startort] + zwischenstopps + [zielort]
+        if any(h1 in ort.lower() or h2 in ort.lower() for ort in route_orte):
+            passende.append((name, dauer))
+    if passende:
+        st.markdown("### ✅ Passende Fähren – bitte bestätigen:")
+        for name, dauer in passende:
+            if st.checkbox(f"{name} ({dauer} h)", key=f"chk_{name}"):
+                aktive_faehren.append({"route": name, "dauer": dauer})
+
 # Abfahrtszeit
 st.subheader("🕒 Abfahrtszeit planen")
 pause_aktiv = st.checkbox("Ich bin gerade in Pause – Abfahrt folgt:")
@@ -105,44 +139,7 @@ else:
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
-# Zwischenstopps mit Ortsanzeige
-st.markdown("### ➕ Zwischenstopps")
-if "zwischenstopps" not in st.session_state:
-    st.session_state.zwischenstopps = []
-if st.button("➕ Zwischenstopp hinzufügen"):
-    if len(st.session_state.zwischenstopps) < 10:
-        st.session_state.zwischenstopps.append("")
-for i in range(len(st.session_state.zwischenstopps)):
-    st.session_state.zwischenstopps[i] = st.text_input(f"Zwischenstopp {i+1}", st.session_state.zwischenstopps[i], key=f"stop_{i}")
-zwischenstopps = [s for s in st.session_state.zwischenstopps if s.strip()]
-for stop in zwischenstopps:
-    st.caption(f"Zwischenstopp: {get_place_info(stop)}")
-
-# Fährenlogik: Auswahl
-st.markdown("### 🛳️ Fährlogik")
-col_f1, col_f2 = st.columns([2, 1])
-manuelle_faehre = col_f1.selectbox("Manuelle Fährwahl (optional)", ["Keine"] + list(FAEHREN.keys()))
-auto_faehre = col_f2.checkbox("🚢 Fähre automatisch erkennen", value=True)
-
-aktive_faehren = []
-vorauswahl_fehren = []
-
-if manuelle_faehre != "Keine":
-    aktive_faehren = [{"route": manuelle_faehre, "dauer": FAEHREN[manuelle_faehre]}]
-else:
-    if auto_faehre:
-        for name, dauer in FAEHREN.items():
-            h1, h2 = name.lower().split("–")
-            if h1 in startort.lower() or h2 in startort.lower() or any(h1 in s.lower() or h2 in s.lower() for s in zwischenstopps):
-                vorauswahl_fehren.append((name, dauer))
-
-if vorauswahl_fehren:
-    st.markdown("### ✅ Passende Fähren – bitte bestätigen:")
-    for name, dauer in vorauswahl_fehren:
-        if st.checkbox(f"✔ {name} ({dauer} h)", key=f"chk_{name}"):
-            aktive_faehren.append({"route": name, "dauer": dauer})
-
-# Fahrzeitoptionen
+# 10h / 9h Optionen
 col_a, col_b = st.columns(2)
 with col_a:
     st.subheader("🟩 10h-Fahrten (max. 2)")
@@ -157,7 +154,7 @@ with col_b:
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
-# Wochenruheoption
+# Wochenruhe
 st.markdown("### 🛌 Wochenruhepause (optional)")
 wochenruhe_manuell = st.checkbox("Wöchentliche Ruhezeit während der Tour einfügen?")
 if wochenruhe_manuell:
@@ -235,16 +232,12 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if zehner_index < 2: zehner_index += 1
             if neuner_index < 3: neuner_index += 1
 
-        # Ausgabe Fahrplan
+        # Fahrplan-Ausgabe
         st.markdown("## 📋 Fahrplan")
         for eintrag in log:
             st.markdown(eintrag)
 
-        # Verbleibend
-        verbl_10h = max(0, zehner_fahrten.count(True) - zehner_index)
-        verbl_9h = max(0, neuner_ruhen.count(True) - neuner_index)
-        st.info(f"🧮 Verbleibend: {verbl_10h}× 10h, {verbl_9h}× 9h")
-
+        # Zielzeit berechnen
         ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
         letzte_ankunft = letzte_fahrt_ende.astimezone(ziel_tz)
 
