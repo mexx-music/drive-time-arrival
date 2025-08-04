@@ -417,10 +417,13 @@ if manuelle_abfahrtszeit:
     aktuelle_zeit = manuelle_abfahrtszeit
     log.append(f"🕓 Manuelle Abfahrt der Fähre: {manuelle_abfahrtszeit.strftime('%Y-%m-%d %H:%M')}")
 else:
-    if manuelle_abfahrtszeit:
+   if manuelle_abfahrtszeit:
     aktuelle_zeit = manuelle_abfahrtszeit
     log.append(f"🕓 Manuelle Abfahrt der Fähre: {manuelle_abfahrtszeit.strftime('%Y-%m-%d %H:%M')}")
 elif naechste_abfahrt:
+    wartezeit = int((naechste_abfahrt - aktuelle_zeit).total_seconds() / 60)
+    log.append(f"⏱ Wartezeit bis Fähre: {wartezeit} min → Abfahrt: {naechste_abfahrt.strftime('%H:%M')}")
+    aktuelle_zeit = naechste_abfahrt
     wartezeit = int((naechste_abfahrt - aktuelle_zeit).total_seconds() / 60)
     log.append(f"⏱ Wartezeit bis Fähre: {wartezeit} min → Abfahrt: {naechste_abfahrt.strftime('%H:%M')}")
     aktuelle_zeit = naechste_abfahrt
