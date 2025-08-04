@@ -63,26 +63,6 @@ FAHRPLAN = {
         "gesellschaft": "Grimaldi",
         "dauer_stunden": 9,
         "abfahrten": ["07:00", "14:00", "20:00"]
-    }, = {
-    "Patras–Bari (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 18,
-        "abfahrten": ["10:00", "19:00"]
-    },
-    "Bari–Patras (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 18,
-        "abfahrten": ["08:00", "17:00"]
-    },
-    "Patras–Brindisi (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 19,
-        "abfahrten": ["07:00", "15:00"]
-    },
-    "Brindisi–Patras (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 19,
-        "abfahrten": ["06:00", "16:00"]
     },
     "Patras–Bari (Grimaldi)": {
         "gesellschaft": "Grimaldi",
@@ -153,9 +133,30 @@ FAHRPLAN = {
         "gesellschaft": "FjordLine",
         "dauer_stunden": 16,
         "abfahrten": ["13:30"]
+    },
+
+    # 🚢 Erweiterung: Fähren ab Rostock
+    "Rostock–Trelleborg (TT-Line)": {
+        "gesellschaft": "TT-Line",
+        "dauer_stunden": 6.5,
+        "abfahrten": ["09:00", "15:00", "23:00"]
+    },
+    "Trelleborg–Rostock (TT-Line)": {
+        "gesellschaft": "TT-Line",
+        "dauer_stunden": 6.5,
+        "abfahrten": ["07:00", "13:30", "21:30"]
+    },
+    "Rostock–Gedser (Scandlines)": {
+        "gesellschaft": "Scandlines",
+        "dauer_stunden": 2,
+        "abfahrten": ["06:00", "09:00", "12:00", "15:00", "18:00", "21:00"]
+    },
+    "Gedser–Rostock (Scandlines)": {
+        "gesellschaft": "Scandlines",
+        "dauer_stunden": 2,
+        "abfahrten": ["07:00", "10:00", "13:00", "16:00", "19:00", "22:00"]
     }
 }
-
 def get_timezone_for_address(address):
     if not address:
         return "Europe/Vienna"
