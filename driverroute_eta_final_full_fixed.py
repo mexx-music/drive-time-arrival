@@ -358,6 +358,43 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         fahrzeit_min = int(km / geschwindigkeit * 60)
         remaining = fahrzeit_min
 
+    # Falls Fährsegment vorliegt, diesen Block nur beim 1. Segment ausführen
+    if fährblock and i == 0:
+        log.append(f"📍 Ankunft Hafen {fährblock['von']} um {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
+        abfahrtszeiten = fährblock.get("abfahrten", [])
+        aktuelle_uhrzeit = aktuelle_zeit.time()
+        naechste_abfahrt = None
+
+        for abf in abfahrtszeiten:
+            h, m = map(int, abf.split(":"))
+            geplante_abfahrt = aktuelle_zeit.replace(hour=h, minute=m, second=0, microsecond=0)
+            if geplante_abfahrt >= aktuelle_zeit:
+                naechste_abfahrt = geplante_abfahrt
+                break
+
+        if not naechste_abfahrt and abfahrtszeiten:
+            h, m = map(int, abfahrtszeiten[0].split(":"))
+            naechste_abfahrt = aktuelle_zeit.replace(hour=h, minute=m, second=0, microsecond=0) + timedelta(days=1)
+
+        if manuelle_abfahrtszeit:
+            aktuelle_zeit = manuelle_abfahrtszeit
+            log.append(f"🕓 Manuelle Abfahrt der Fähre: {manuelle_abfahrtszeit.strftime('%Y-%m-%d %H:%M')}")
+        elif naechste_abfahrt:
+            wartezeit = int((naechste_abfahrt - aktuelle_zeit).total_seconds() / 60)
+            warte_h = wartezeit // 60
+            warte_m = wartezeit % 60
+            log.append(f"⏱ Wartezeit bis Fähre: {warte_h}h{warte_m:02d} → Abfahrt: {naechste_abfahrt.strftime('%H:%M')}")
+            aktuelle_zeit = naechste_abfahrt
+
+        aktuelle_zeit += timedelta(hours=fährblock["dauer"])
+        log.append(f"🚢 Fähre {fährblock['route']} {fährblock['dauer']}h → Ankunft: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
+        letzte_ankunft = aktuelle_zeit
+
+        if fährblock["dauer"] * 60 >= 540:
+            log.append("✅ Pause vollständig während Fähre erfüllt")
+            zehner_index = 0
+            neuner_index = 0
+
         while remaining > 0:
             if we_start and we_start <= aktuelle_zeit < we_ende:
                 log.append(f"🛌 Wochenruhe von {we_start.strftime('%Y-%m-%d %H:%M')} bis {we_ende.strftime('%Y-%m-%d %H:%M')}")
