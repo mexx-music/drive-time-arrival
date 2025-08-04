@@ -475,21 +475,18 @@ if st.button("📦 Berechnen & ETA anzeigen"):
     for eintrag in log:
         st.markdown(eintrag)
 
-    # ✅ ETA anzeigen
+    # ✅ ETA-Anzeige – nur wenn berechnet
     ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-   
-
-# ✅ Sicherstellen, dass letzte_ankunft existiert
-if letzte_ankunft:
-    letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
-    st.markdown(
-        f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
-        f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>"
-        f"({ziel_tz.zone})</h2>",
-        unsafe_allow_html=True
-    )
-else:
-    st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
+    if letzte_ankunft:
+        letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
+        st.markdown(
+            f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
+            f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>"
+            f"({ziel_tz.zone})</h2>",
+            unsafe_allow_html=True
+        )
+    else:
+        st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
 
     # 🗺️ Karte anzeigen
     map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
