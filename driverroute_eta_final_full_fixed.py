@@ -309,32 +309,40 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 neuner_index = 0
                 continue
 
-            if aktuelle_zeit.weekday() == 0 and aktuelle_zeit.hour >= 2:
-                log.append("🔄 Wochenreset: Montag ab 02:00")
-                zehner_index = 0
-                neuner_index = 0
+                  # 🔁 Wochenruhe automatisch (wenn aktiv)
+        if we_start and we_start <= aktuelle_zeit < we_ende:
+            log.append(f"🛌 Wochenruhe von {we_start.strftime('%Y-%m-%d %H:%M')} bis {we_ende.strftime('%Y-%m-%d %H:%M')}")
+            aktuelle_zeit = we_ende
+            zehner_index = 0
+            neuner_index = 0
+            continue
 
-            max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
-            gefahren = min(remaining, max_drive)
-            pausen = 45 if gefahren >= 270 else 0
-            if tankpause and not used_tank:
-                pausen += 30
-                used_tank = True
+        # 🔁 Wochenreset (ohne Anzeige)
+        if aktuelle_zeit.weekday() == 0 and aktuelle_zeit.hour >= 2:
+            zehner_index = 0
+            neuner_index = 0
 
-            ende = aktuelle_zeit + timedelta(minutes=gefahren + pausen)
-            log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min → {ende.strftime('%H:%M')}")
-            aktuelle_zeit = ende
-            remaining -= gefahren
-            letzte_ankunft = ende
+        max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
+        gefahren = min(remaining, max_drive)
+        pausen = 45 if gefahren >= 270 else 0
+        if tankpause and not used_tank:
+            pausen += 30
+            used_tank = True
 
-            if remaining <= 0:
-                break
+        ende = aktuelle_zeit + timedelta(minutes=gefahren + pausen)
+        log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min → {ende.strftime('%H:%M')}")
+        aktuelle_zeit = ende
+        remaining -= gefahren
+        letzte_ankunft = ende
 
-            ruhe = 540 if neuner_index < 3 and neuner_ruhen[neuner_index] else 660
-            aktuelle_zeit += timedelta(minutes=ruhe)
-            log.append(f"🌙 Ruhezeit {ruhe//60}h → Neustart: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
-            if zehner_index < 2: zehner_index += 1
-            if neuner_index < 3: neuner_index += 1
+        if remaining <= 0:
+            break
+
+        ruhe = 540 if neuner_index < 3 and neuner_ruhen[neuner_index] else 660
+        aktuelle_zeit += timedelta(minutes=ruhe)
+        log.append(f"🌙 Ruhezeit {ruhe//60}h → Neustart: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
+        if zehner_index < 2: zehner_index += 1
+        if neuner_index < 3: neuner_index += 1
 
         # 🛳 Fähre einbauen
         if fährblock and i == 0:
