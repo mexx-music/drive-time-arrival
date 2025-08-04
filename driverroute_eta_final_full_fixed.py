@@ -202,35 +202,29 @@ start_time = local_tz.localize(abfahrt_time)
 erweiterungen_anzeigen = st.checkbox("🔧 Zusätzliche Eingaben anzeigen (z. B. Einsatzzeit, Lenkzeit)", value=False)
 if erweiterungen_anzeigen:
 
-# 🔁 Zusatz: Bisherige Fahrzeit & Einsatzzeit
-st.markdown("### 📍 Zwischeneinstieg – bisherige Fahrt erfassen")
+    # 🔁 Zusatz: Bisherige Fahrzeit & Einsatzzeit
+    st.markdown("### 📍 Zwischeneinstieg – bisherige Fahrt erfassen")
 
-st.markdown("### 🕓 Bereits gefahrene Lenkzeit heute (optional)")
-col_b1, col_b2 = st.columns(2)
-with col_b1:
-    gefahrene_stunden = st.number_input("🕓 Stunden", 0, 10, 0, step=1)
-with col_b2:
-    gefahrene_minuten = st.number_input("🕧 Minuten", 0, 59, 0, step=5)
-bisher_gefahren_min = gefahrene_stunden * 60 + gefahrene_minuten
-if bisher_gefahren_min > 0:
-    st.info(f"✅ Bereits gefahren: {gefahrene_stunden}h{gefahrene_minuten:02d}")
+    st.markdown("### 🕓 Bereits gefahrene Lenkzeit heute (optional)")
+    col_b1, col_b2 = st.columns(2)
+    with col_b1:
+        gefahrene_stunden = st.number_input("🕓 Stunden", 0, 10, 0, step=1)
+    with col_b2:
+        gefahrene_minuten = st.number_input("🕧 Minuten", 0, 59, 0, step=5)
+    bisher_gefahren_min = gefahrene_stunden * 60 + gefahrene_minuten
+    if bisher_gefahren_min > 0:
+        st.info(f"✅ Bereits gefahren: {gefahrene_stunden}h{gefahrene_minuten:02d}")
 
-st.markdown("### ⏱ Gesamteinsatzzeit bisher (optional)")
-col_e1, col_e2 = st.columns(2)
-with col_e1:
-    einsatz_stunden = st.number_input("⏱ Stunden", 0, 12, 0, step=1)
-with col_e2:
-    einsatz_minuten = st.number_input("Minuten", 0, 59, 0, step=5)
-
-einsatz_bisher_min = einsatz_stunden * 60 + einsatz_minuten
-if einsatz_bisher_min > 0:
+    st.markdown("### ⏱ Gesamteinsatzzeit bisher (optional)")
+    col_e1, col_e2 = st.columns(2)
+    with col_e1:
+        einsatz_stunden = st.number_input("⏱ Stunden", 0, 12, 0, step=1)
+    with col_e2:
+        einsatz_minuten = st.number_input("Minuten", 0, 59, 0, step=5)
+    einsatz_bisher_min = einsatz_stunden * 60 + einsatz_minuten
+    if einsatz_bisher_min > 0:
         start_time -= timedelta(minutes=einsatz_bisher_min)
-    st.caption(f"🔁 Neue Startzeit durch Rückrechnung: {start_time.strftime('%Y-%m-%d %H:%M')}")
-
-# ⛽ Geschwindigkeit + Tankpause
-geschwindigkeit = st.number_input("🛻 Durchschnittsgeschwindigkeit (km/h)", 60, 120, 80)
-tankpause = st.checkbox("⛽ Tankpause (30 min)?")
-
+        st.caption(f"🔁 Neue Startzeit durch Rückrechnung: {start_time.strftime('%Y-%m-%d %H:%M')}")
 # 🛌 Wochenruhepause
 st.markdown("### 🛌 Wochenruhepause (optional)")
 wochenruhe_manuell = st.checkbox("Wöchentliche Ruhezeit während der Tour einfügen?")
