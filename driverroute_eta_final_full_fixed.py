@@ -180,7 +180,17 @@ start_time = local_tz.localize(abfahrt_time)
 
 # 🔁 Zusatz: Bisherige Fahrzeit & Einsatzzeit
 st.markdown("### 📍 Zwischeneinstieg – bisherige Fahrt erfassen")
-bisher_gefahren_min = st.number_input("🕒 Bereits gefahrene Zeit (Minuten)", 0, 600, 0, 15)
+
+st.markdown("### 🕓 Bereits gefahrene Lenkzeit heute (optional)")
+col_b1, col_b2 = st.columns(2)
+with col_b1:
+    gefahrene_stunden = st.number_input("🕓 Stunden", 0, 10, 0, step=1)
+with col_b2:
+    gefahrene_minuten = st.number_input("🕧 Minuten", 0, 59, 0, step=5)
+bisher_gefahren_min = gefahrene_stunden * 60 + gefahrene_minuten
+if bisher_gefahren_min > 0:
+    st.info(f"✅ Bereits gefahren: {gefahrene_stunden}h{gefahrene_minuten:02d}")
+
 einsatz_bisher_min = st.number_input("⏱ Gesamteinsatzzeit bisher (Minuten)", 0, 720, 0, 15)
 if einsatz_bisher_min > 0:
     start_time -= timedelta(minutes=einsatz_bisher_min)
