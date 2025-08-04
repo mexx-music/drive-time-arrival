@@ -1,3 +1,5 @@
+# 🚛 DriverRoute ETA – Fusion-Version (Text.txt + 22h30 + Pausefix)
+
 import streamlit as st
 import requests
 import urllib.parse
@@ -6,132 +8,35 @@ import pytz
 import math
 import time
 
-st.set_page_config(page_title="DriverRoute ETA – Finalversion", layout="centered")
-
+st.set_page_config(page_title="DriverRoute ETA – Fusion-Version", layout="centered")
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
+# 🛳 Aktueller Fahrplan mit Abfahrten
 FAHRPLAN = {
-    "Patras–Ancona (Superfast)": {
-        "gesellschaft": "Superfast",
-        "dauer_stunden": 22,
-        "abfahrten": ["08:00", "17:30", "22:00"]
-    },
-    "Ancona–Patras (Superfast)": {
-        "gesellschaft": "Superfast",
-        "dauer_stunden": 22,
-        "abfahrten": ["08:00", "17:30", "22:00"]
-    },
-    "Igoumenitsa–Ancona (Superfast)": {
-        "gesellschaft": "Superfast",
-        "dauer_stunden": 20,
-        "abfahrten": ["06:30", "13:30", "20:00"]
-    },
-    "Ancona–Igoumenitsa (Superfast)": {
-        "gesellschaft": "Superfast",
-        "dauer_stunden": 20,
-        "abfahrten": ["06:30", "13:30", "20:00"]
-    },
-    "Igoumenitsa–Bari (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 10,
-        "abfahrten": ["12:00", "18:00", "23:59"]
-    },
-    "Bari–Igoumenitsa (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 10,
-        "abfahrten": ["10:00", "17:00", "22:00"]
-    },
-    "Igoumenitsa–Brindisi (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 9,
-        "abfahrten": ["08:00", "15:00", "21:30"]
-    },
-    "Brindisi–Igoumenitsa (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 9,
-        "abfahrten": ["07:00", "14:00", "20:00"]
-    },
-    "Patras–Bari (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 18,
-        "abfahrten": ["10:00", "19:00"]
-    },
-    "Bari–Patras (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 18,
-        "abfahrten": ["08:00", "17:00"]
-    },
-    "Patras–Brindisi (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 19,
-        "abfahrten": ["07:00", "15:00"]
-    },
-    "Brindisi–Patras (Grimaldi)": {
-        "gesellschaft": "Grimaldi",
-        "dauer_stunden": 19,
-        "abfahrten": ["06:00", "16:00"]
-    },
-    "Trelleborg–Travemünde (TT-Line)": {
-        "gesellschaft": "TT-Line",
-        "dauer_stunden": 9,
-        "abfahrten": ["02:00", "10:00", "20:00"]
-    },
-    "Travemünde–Trelleborg (TT-Line)": {
-        "gesellschaft": "TT-Line",
-        "dauer_stunden": 9,
-        "abfahrten": ["04:00", "12:00", "22:00"]
-    },
-    "Trelleborg–Kiel (TT-Line)": {
-        "gesellschaft": "TT-Line",
-        "dauer_stunden": 13,
-        "abfahrten": ["01:00", "15:00"]
-    },
-    "Kiel–Trelleborg (TT-Line)": {
-        "gesellschaft": "TT-Line",
-        "dauer_stunden": 13,
-        "abfahrten": ["05:00", "19:00"]
-    },
-    "Color Line Kiel–Oslo": {
-        "gesellschaft": "Color Line",
-        "dauer_stunden": 20,
-        "abfahrten": ["14:00"]
-    },
-    "Color Line Oslo–Kiel": {
-        "gesellschaft": "Color Line",
-        "dauer_stunden": 20,
-        "abfahrten": ["14:00"]
-    },
-    "Hirtshals–Stavanger (FjordLine)": {
-        "gesellschaft": "FjordLine",
-        "dauer_stunden": 10,
-        "abfahrten": ["08:00", "20:00"]
-    },
-    "Stavanger–Hirtshals (FjordLine)": {
-        "gesellschaft": "FjordLine",
-        "dauer_stunden": 10,
-        "abfahrten": ["09:00", "21:00"]
-    },
-    "Hirtshals–Bergen (FjordLine)": {
-        "gesellschaft": "FjordLine",
-        "dauer_stunden": 16,
-        "abfahrten": ["08:00"]
-    },
-    "Bergen–Hirtshals (FjordLine)": {
-        "gesellschaft": "FjordLine",
-        "dauer_stunden": 16,
-        "abfahrten": ["13:30"]
-    }
+    "Patras–Ancona (Superfast)": {"gesellschaft": "Superfast", "dauer_stunden": 22, "abfahrten": ["08:00", "17:30", "22:00"]},
+    "Ancona–Patras (Superfast)": {"gesellschaft": "Superfast", "dauer_stunden": 22, "abfahrten": ["08:00", "17:30", "22:00"]},
+    "Igoumenitsa–Ancona (Superfast)": {"gesellschaft": "Superfast", "dauer_stunden": 20, "abfahrten": ["06:30", "13:30", "20:00"]},
+    "Ancona–Igoumenitsa (Superfast)": {"gesellschaft": "Superfast", "dauer_stunden": 20, "abfahrten": ["06:30", "13:30", "20:00"]},
+    "Igoumenitsa–Bari (Grimaldi)": {"gesellschaft": "Grimaldi", "dauer_stunden": 10, "abfahrten": ["12:00", "18:00", "23:59"]},
+    "Bari–Igoumenitsa (Grimaldi)": {"gesellschaft": "Grimaldi", "dauer_stunden": 10, "abfahrten": ["10:00", "17:00", "22:00"]},
+    "Igoumenitsa–Brindisi (Grimaldi)": {"gesellschaft": "Grimaldi", "dauer_stunden": 9, "abfahrten": ["08:00", "15:00", "21:30"]},
+    "Brindisi–Igoumenitsa (Grimaldi)": {"gesellschaft": "Grimaldi", "dauer_stunden": 9, "abfahrten": ["07:00", "14:00", "20:00"]},
+    "Trelleborg–Travemünde (TT-Line)": {"gesellschaft": "TT-Line", "dauer_stunden": 9, "abfahrten": ["02:00", "10:00", "20:00"]},
+    "Travemünde–Trelleborg (TT-Line)": {"gesellschaft": "TT-Line", "dauer_stunden": 9, "abfahrten": ["04:00", "12:00", "22:00"]},
+    "Color Line Kiel–Oslo": {"gesellschaft": "Color Line", "dauer_stunden": 20, "abfahrten": ["14:00"]},
+    "Color Line Oslo–Kiel": {"gesellschaft": "Color Line", "dauer_stunden": 20, "abfahrten": ["14:00"]},
+    "Hirtshals–Bergen (FjordLine)": {"gesellschaft": "FjordLine", "dauer_stunden": 16, "abfahrten": ["08:00"]},
+    "Bergen–Hirtshals (FjordLine)": {"gesellschaft": "FjordLine", "dauer_stunden": 16, "abfahrten": ["13:30"]}
 }
 
+# 🌍 Hilfsfunktionen
 def get_timezone_for_address(address):
-    if not address:
-        return "Europe/Vienna"
+    if not address: return "Europe/Vienna"
     url = f"https://maps.googleapis.com/maps/api/geocode/json?address={urllib.parse.quote(address)}&key={GOOGLE_API_KEY}"
     r = requests.get(url).json()
     if r["status"] == "OK":
         loc = r["results"][0]["geometry"]["location"]
-        lat, lng = loc["lat"], loc["lng"]
-        tz_url = f"https://maps.googleapis.com/maps/api/timezone/json?location={lat},{lng}&timestamp={int(time.time())}&key={GOOGLE_API_KEY}"
+        tz_url = f"https://maps.googleapis.com/maps/api/timezone/json?location={loc['lat']},{loc['lng']}&timestamp={int(time.time())}&key={GOOGLE_API_KEY}"
         tz_data = requests.get(tz_url).json()
         return tz_data.get("timeZoneId", "Europe/Vienna")
     return "Europe/Vienna"
@@ -175,6 +80,7 @@ def get_place_info(address):
         return f"📌 {ort}, {plz} ({land})"
     return "❌ Ort nicht gefunden"
 
+# ➗ Route segmentieren (vor / nach Fähre)
 def segmentiere_route(start, ziel, zwischenstopps, faehre_name):
     h1, h2 = faehre_name.split("–")
     h1 = h1.strip().lower()
@@ -195,14 +101,12 @@ def segmentiere_route(start, ziel, zwischenstopps, faehre_name):
             post_stops.append(stop)
 
     abschnitt_1 = {"start": start, "ziel": h1.title(), "zwischen": pre_stops}
-    faehre = {"route": faehre_name, "von": h1.title(), "nach": h2.title()}
     abschnitt_2 = {"start": h2.title(), "ziel": ziel, "zwischen": post_stops}
-
+    faehre = {"route": faehre_name, "von": h1.title(), "nach": h2.title()}
     return abschnitt_1, faehre, abschnitt_2
 
-
-# 🟢 UI: Start + Ziel + Zwischenstopps
-st.title("🚛 DriverRoute ETA – Finalversion")
+# 🧭 Start der UI
+st.title("🚛 DriverRoute ETA – Fusion-Version")
 
 col1, col2 = st.columns(2)
 startort = col1.text_input("📍 Startort oder PLZ", "")
@@ -228,46 +132,35 @@ for stop in zwischenstopps:
 
 # 🛳️ Fährenauswahl
 st.markdown("### 🛳️ Fährlogik")
-
-# Manuelle Fährwahl
 manuelle_faehre = st.selectbox("Manuelle Fährwahl (optional)", ["Keine"] + list(FAHRPLAN.keys()))
-
-# Manuelle Abfahrtszeit für Fähre (nur bei manueller Auswahl)
 manuelle_abfahrtszeit = None
+
 if manuelle_faehre != "Keine":
-    st.markdown("### ⏱️ Abfahrtszeit der Fähre manuell eingeben")
-    manuelle_fae_datum = st.date_input("📆 Datum der Fährabfahrt", value=now_local.date(), key="fae_datum")
-    manuelle_fae_stunde = st.number_input("🕓 Stunde der Fährabfahrt", 0, 23, 20, key="fae_std")
-    manuelle_fae_minute = st.number_input("🕧 Minute der Fährabfahrt", 0, 59, 0, key="fae_min")
+    st.markdown("#### ⏱️ Manuelle Abfahrtszeit (optional)")
+    fae_datum = st.date_input("📆 Datum", value=now_local.date(), key="fae_datum")
+    fae_std = st.number_input("🕓 Stunde", 0, 23, 20, key="fae_std")
+    fae_min = st.number_input("🕧 Minute", 0, 59, 0, key="fae_min")
     manuelle_abfahrtszeit = datetime.combine(
-        manuelle_fae_datum,
-        datetime.strptime(f"{manuelle_fae_stunde}:{manuelle_fae_minute}", "%H:%M").time()
+        fae_datum,
+        datetime.strptime(f"{fae_std}:{fae_min}", "%H:%M").time()
     )
     manuelle_abfahrtszeit = local_tz.localize(manuelle_abfahrtszeit)
 
-
-# Automatik-Checkbox
-auto_faehren_erlaubt = st.checkbox("🚢 Automatische Fährenerkennung aktivieren", value=True)
+auto_faehre = st.checkbox("🚢 Automatische Fährenerkennung aktivieren", value=True)
 
 aktive_faehren = []
 if manuelle_faehre != "Keine":
-    # Manuelle Auswahl
-    f_info = FAHRPLAN[manuelle_faehre]
-    aktive_faehren = [{
+    f = FAHRPLAN[manuelle_faehre]
+    aktive_faehren.append({
         "route": manuelle_faehre,
-        "dauer": f_info["dauer_stunden"],
-        "abfahrten": f_info["abfahrten"]
-    }]
-elif auto_faehren_erlaubt:
-    passende = []
+        "dauer": f["dauer_stunden"],
+        "abfahrten": f["abfahrten"]
+    })
+elif auto_faehre:
     for name, daten in FAHRPLAN.items():
         h1, h2 = name.lower().split("–")
         route_orte = [startort] + zwischenstopps + [zielort]
         if any(h1 in ort.lower() or h2 in ort.lower() for ort in route_orte):
-            passende.append((name, daten))
-    if passende:
-        st.markdown("### ✅ Passende Fähren – bitte bestätigen:")
-        for name, daten in passende:
             if st.checkbox(f"{name} ({daten['dauer_stunden']} h)", key=f"chk_{name}"):
                 aktive_faehren.append({
                     "route": name,
@@ -275,8 +168,8 @@ elif auto_faehren_erlaubt:
                     "abfahrten": daten["abfahrten"]
                 })
 
-# 🕒 Abfahrtszeit
-st.subheader("🕒 Abfahrtszeit planen")
+# 🕒 Abfahrt planen
+st.markdown("### 🕒 Abfahrtszeit planen")
 pause_aktiv = st.checkbox("Ich bin gerade in Pause – Abfahrt folgt:")
 if pause_aktiv:
     abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
@@ -286,15 +179,14 @@ else:
     abfahrt_datum = st.date_input("Datum", value=now_local.date())
     abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
     abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
-
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
-# Geschwindigkeit + Tankpause
+# ⛽ Geschwindigkeit & Tankpause
 geschwindigkeit = st.number_input("🛻 Durchschnittsgeschwindigkeit (km/h)", 60, 120, 80)
 tankpause = st.checkbox("⛽ Tankpause (30 min)?")
 
-# 🛌 Wochenruhe
+# 🛌 Wochenruhepause
 st.markdown("### 🛌 Wochenruhepause (optional)")
 wochenruhe_manuell = st.checkbox("Wöchentliche Ruhezeit während der Tour einfügen?")
 if wochenruhe_manuell:
@@ -308,7 +200,7 @@ else:
     we_start = None
     we_ende = None
 
-# 10h/9h Regeln
+# 🟩 10h / 9h-Kästchen
 col_a, col_b = st.columns(2)
 with col_a:
     st.subheader("🟩 10h-Fahrten (max. 2)")
@@ -323,12 +215,16 @@ with col_b:
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
 
-# 📦 Start der Berechnung
+# 📦 Berechnung starten
 if st.button("📦 Berechnen & ETA anzeigen"):
     log = []
-    total_km = 0
     aktuelle_zeit = start_time
+    letzte_ankunft = None
+    used_tank = False
+    zehner_index = 0
+    neuner_index = 0
 
+    # Strecke segmentieren, falls Fähre vorhanden
     if aktive_faehren:
         f = aktive_faehren[0]
         abschnitt1, faehre, abschnitt2 = segmentiere_route(startort, zielort, zwischenstopps, f["route"])
@@ -344,56 +240,14 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         segmente = [{"start": startort, "ziel": zielort, "zwischen": zwischenstopps}]
         fährblock = None
 
-    zehner_index = 0
-    neuner_index = 0
-    used_tank = False
-    letzte_ankunft = None
-
     for i, seg in enumerate(segmente):
         km = entfernung_schaetzung(seg["start"], seg["ziel"], seg["zwischen"])
-        total_km += km or 0
         if km is None:
-            st.error("❌ Abschnitt konnte nicht berechnet werden.")
-            break
+            st.error(f"❌ Abschnitt {seg['start']} → {seg['ziel']} konnte nicht berechnet werden.")
+            st.stop()
+        log.append(f"📍 Abschnitt {seg['start']} → {seg['ziel']} ({km} km)")
         fahrzeit_min = int(km / geschwindigkeit * 60)
         remaining = fahrzeit_min
-
-    # Falls Fährsegment vorliegt, diesen Block nur beim 1. Segment ausführen
-    if fährblock and i == 0:
-        log.append(f"📍 Ankunft Hafen {fährblock['von']} um {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
-        abfahrtszeiten = fährblock.get("abfahrten", [])
-        aktuelle_uhrzeit = aktuelle_zeit.time()
-        naechste_abfahrt = None
-
-        for abf in abfahrtszeiten:
-            h, m = map(int, abf.split(":"))
-            geplante_abfahrt = aktuelle_zeit.replace(hour=h, minute=m, second=0, microsecond=0)
-            if geplante_abfahrt >= aktuelle_zeit:
-                naechste_abfahrt = geplante_abfahrt
-                break
-
-        if not naechste_abfahrt and abfahrtszeiten:
-            h, m = map(int, abfahrtszeiten[0].split(":"))
-            naechste_abfahrt = aktuelle_zeit.replace(hour=h, minute=m, second=0, microsecond=0) + timedelta(days=1)
-
-        if manuelle_abfahrtszeit:
-            aktuelle_zeit = manuelle_abfahrtszeit
-            log.append(f"🕓 Manuelle Abfahrt der Fähre: {manuelle_abfahrtszeit.strftime('%Y-%m-%d %H:%M')}")
-        elif naechste_abfahrt:
-            wartezeit = int((naechste_abfahrt - aktuelle_zeit).total_seconds() / 60)
-            warte_h = wartezeit // 60
-            warte_m = wartezeit % 60
-            log.append(f"⏱ Wartezeit bis Fähre: {warte_h}h{warte_m:02d} → Abfahrt: {naechste_abfahrt.strftime('%H:%M')}")
-            aktuelle_zeit = naechste_abfahrt
-
-        aktuelle_zeit += timedelta(hours=fährblock["dauer"])
-        log.append(f"🚢 Fähre {fährblock['route']} {fährblock['dauer']}h → Ankunft: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
-        letzte_ankunft = aktuelle_zeit
-
-        if fährblock["dauer"] * 60 >= 540:
-            log.append("✅ Pause vollständig während Fähre erfüllt")
-            zehner_index = 0
-            neuner_index = 0
 
         while remaining > 0:
             if we_start and we_start <= aktuelle_zeit < we_ende:
@@ -410,13 +264,13 @@ if st.button("📦 Berechnen & ETA anzeigen"):
 
             max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
             gefahren = min(remaining, max_drive)
-            pausen = math.floor(gefahren / 270) * 45
+            pausen = 45 if gefahren >= 270 else 0
             if tankpause and not used_tank:
                 pausen += 30
                 used_tank = True
 
             ende = aktuelle_zeit + timedelta(minutes=gefahren + pausen)
-            log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min Pause → {ende.strftime('%H:%M')}")
+            log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min → {ende.strftime('%H:%M')}")
             aktuelle_zeit = ende
             remaining -= gefahren
             letzte_ankunft = ende
@@ -430,52 +284,44 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             if zehner_index < 2: zehner_index += 1
             if neuner_index < 3: neuner_index += 1
 
-        # Fährblock einfügen
-        
-# ✅ Reparierter finaler Block (Ersatz für fehlerhaften Bereich)
-
+        # 🛳 Fährblock einbauen nach Abschnitt 1
         if fährblock and i == 0:
             log.append(f"📍 Ankunft Hafen {fährblock['von']} um {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
-            abfahrtszeiten = fährblock.get("abfahrten", [])
-            aktuelle_uhrzeit = aktuelle_zeit.time()
+            abfahrtszeiten = fährblock["abfahrten"]
             naechste_abfahrt = None
-
             for abf in abfahrtszeiten:
                 h, m = map(int, abf.split(":"))
-                geplante_abfahrt = aktuelle_zeit.replace(hour=h, minute=m, second=0, microsecond=0)
-                if geplante_abfahrt >= aktuelle_zeit:
-                    naechste_abfahrt = geplante_abfahrt
+                geplante = aktuelle_zeit.replace(hour=h, minute=m, second=0, microsecond=0)
+                if geplante >= aktuelle_zeit:
+                    naechste_abfahrt = geplante
                     break
-
-            if not naechste_abfahrt and abfahrtszeiten:
+            if not naechste_abfahrt:
                 h, m = map(int, abfahrtszeiten[0].split(":"))
-                naechste_abfahrt = aktuelle_zeit.replace(hour=h, minute=m, second=0, microsecond=0) + timedelta(days=1)
+                naechste_abfahrt = aktuelle_zeit.replace(hour=h, minute=m) + timedelta(days=1)
 
             if manuelle_abfahrtszeit:
                 aktuelle_zeit = manuelle_abfahrtszeit
                 log.append(f"🕓 Manuelle Abfahrt der Fähre: {manuelle_abfahrtszeit.strftime('%Y-%m-%d %H:%M')}")
             elif naechste_abfahrt:
-                wartezeit = int((naechste_abfahrt - aktuelle_zeit).total_seconds() / 60)
-                warte_h = wartezeit // 60
-                warte_m = wartezeit % 60
-                log.append(f"⏱ Wartezeit bis Fähre: {warte_h}h{warte_m:02d} → Abfahrt: {naechste_abfahrt.strftime('%H:%M')}")
+                warte = int((naechste_abfahrt - aktuelle_zeit).total_seconds() / 60)
+                log.append(f"⏱ Wartezeit bis Fähre: {warte//60}h{warte%60:02d} → Abfahrt: {naechste_abfahrt.strftime('%H:%M')}")
                 aktuelle_zeit = naechste_abfahrt
 
             aktuelle_zeit += timedelta(hours=fährblock["dauer"])
-            log.append(f"🚢 Fähre {fährblock['route']} {fährblock['dauer']}h → Ankunft: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
             letzte_ankunft = aktuelle_zeit
+            log.append(f"🚢 Fähre {fährblock['route']} {fährblock['dauer']}h → Ankunft: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
 
             if fährblock["dauer"] * 60 >= 540:
                 log.append("✅ Pause vollständig während Fähre erfüllt")
                 zehner_index = 0
                 neuner_index = 0
 
-    # 📋 Fahrplan anzeigen
-    st.markdown("## 📋 Fahrplan")
+    # 📋 Ausgabe Fahrplan
+    st.markdown("## 📋 Fahrplan:")
     for eintrag in log:
         st.markdown(eintrag)
 
-    # ✅ ETA-Anzeige – nur wenn berechnet
+    # ✅ ETA anzeigen
     ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
     if letzte_ankunft:
         letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
@@ -488,7 +334,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
     else:
         st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
 
-    # 🗺️ Karte anzeigen
+    # 🗺️ Karte
     map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
     if zwischenstopps:
         waypoints_encoded = '|'.join([urllib.parse.quote(s) for s in zwischenstopps])
