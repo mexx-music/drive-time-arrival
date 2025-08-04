@@ -33,7 +33,7 @@ with st.expander("ℹ️ **Wie funktioniert die App? (Anleitung anzeigen)**", ex
 👆 **Am besten Schritt für Schritt ausfüllen, dann '📦 Berechnen & ETA anzeigen' drücken.**
 """)
 
-st.title("🚛 DriverRoute ETA – Fusion-Version")
+
 
 # 🚢 Fährenfahrplan
 FAHRPLAN = {
