@@ -191,10 +191,17 @@ bisher_gefahren_min = gefahrene_stunden * 60 + gefahrene_minuten
 if bisher_gefahren_min > 0:
     st.info(f"✅ Bereits gefahren: {gefahrene_stunden}h{gefahrene_minuten:02d}")
 
-einsatz_bisher_min = st.number_input("⏱ Gesamteinsatzzeit bisher (Minuten)", 0, 720, 0, 15)
+st.markdown("### ⏱ Gesamteinsatzzeit bisher (optional)")
+col_e1, col_e2 = st.columns(2)
+with col_e1:
+    einsatz_stunden = st.number_input("⏱ Stunden", 0, 12, 0, step=1)
+with col_e2:
+    einsatz_minuten = st.number_input("Minuten", 0, 59, 0, step=5)
+
+einsatz_bisher_min = einsatz_stunden * 60 + einsatz_minuten
 if einsatz_bisher_min > 0:
     start_time -= timedelta(minutes=einsatz_bisher_min)
-    st.caption(f"🔁 Neue Startzeit durch Einsatzrückrechnung: {start_time.strftime('%Y-%m-%d %H:%M')}")
+    st.caption(f"🔁 Neue Startzeit durch Rückrechnung: {start_time.strftime('%Y-%m-%d %H:%M')}")
 
 # ⛽ Geschwindigkeit + Tankpause
 geschwindigkeit = st.number_input("🛻 Durchschnittsgeschwindigkeit (km/h)", 60, 120, 80)
