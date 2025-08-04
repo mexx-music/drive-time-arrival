@@ -107,7 +107,26 @@ def segmentiere_route(start, ziel, zwischenstopps, faehre_name):
     return abschnitt_1, faehre, abschnitt_2
 
 # 🚛 UI – Start / Ziel
-st.title("🚛 DriverRoute ETA – Fusion-Version")
+st.title("🚛 DriverRoute ETA – Max-Version")
+
+with st.expander("ℹ️ **Wie funktioniert die App? (Anleitung öffnen)**", expanded=False):
+    st.markdown("""
+🚛 **DriverRoute ETA App – Kurzinfo**
+
+- Die App berechnet automatisch deine Ankunftszeit inklusive:
+    - gesetzlicher Lenk- und Ruhezeiten
+    - Wochenruhe (wenn aktiviert)
+    - optionaler Fährenverbindungen (manuell + automatisch)
+
+- **Google Maps Karte** kann bei Fährstrecken unrealistische Routen anzeigen (z. B. durchs Meer) – **die ETA-Berechnung ist trotzdem korrekt**.
+
+- Zwischenstopps können jederzeit eingefügt werden – die Route wird dynamisch angepasst.
+
+- Wochenlenkzeit wird mitgerechnet (56h Limit)
+
+**Hinweis**: Alle Zeiten basieren auf lokaler Zeit am Zielort.
+""")
+ – Fusion-Version")
 col1, col2 = st.columns(2)
 startort = col1.text_input("📍 Startort oder PLZ", "")
 zielort = col2.text_input("🏁 Zielort oder PLZ", "")
@@ -178,6 +197,10 @@ else:
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
+erweiterungen_anzeigen = st.checkbox("🔧 Zusätzliche Eingaben anzeigen (z. B. Einsatzzeit, Lenkzeit)", value=False)
+if erweiterungen_anzeigen:
+
+
 # 🔁 Zusatz: Bisherige Fahrzeit & Einsatzzeit
 st.markdown("### 📍 Zwischeneinstieg – bisherige Fahrt erfassen")
 
@@ -200,7 +223,7 @@ with col_e2:
 
 einsatz_bisher_min = einsatz_stunden * 60 + einsatz_minuten
 if einsatz_bisher_min > 0:
-    start_time -= timedelta(minutes=einsatz_bisher_min)
+        start_time -= timedelta(minutes=einsatz_bisher_min)
     st.caption(f"🔁 Neue Startzeit durch Rückrechnung: {start_time.strftime('%Y-%m-%d %H:%M')}")
 
 # ⛽ Geschwindigkeit + Tankpause
@@ -284,8 +307,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 continue
 
             if aktuelle_zeit.weekday() == 0 and aktuelle_zeit.hour >= 2:
-                log.append("🔄 Wochenreset: Montag ab 02:00")
-                zehner_index = 0
+                                zehner_index = 0
                 neuner_index = 0
 
             max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
