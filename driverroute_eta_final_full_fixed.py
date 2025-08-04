@@ -7,28 +7,33 @@ import math
 import time
 
 st.set_page_config(page_title="DriverRoute ETA – Fusion-Version", layout="centered")
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
-st.title("🚛 DriverRoute ETA – Max-Version")
-
-with st.expander("ℹ️ **Wie funktioniert die App? (Anleitung öffnen)**", expanded=False):
+# ℹ️ Kurzanleitung zur App-Nutzung
+with st.expander("ℹ️ **Wie funktioniert die App? (Anleitung anzeigen)**", expanded=False):
     st.markdown("""
-🚛 **DriverRoute ETA App – Kurzinfo**
+🚛 **DriverRoute ETA – Kurzanleitung**
 
-- Die App berechnet automatisch deine Ankunftszeit inklusive:
-    - gesetzlicher Lenk- und Ruhezeiten
-    - Wochenruhe (wenn aktiviert)
-    - optionaler Fährenverbindungen (manuell + automatisch)
+- Die App berechnet deine **Ankunftszeit (ETA)** basierend auf:
+    - gesetzlicher **Lenk- und Ruhezeit** (inkl. 10h/9h-Regeln)
+    - **Wochenruhezeit**, wenn aktiviert
+    - **Fährverbindungen** (manuell oder automatisch erkannt)
+    - individuellen **Zwischenstopps**
 
-- **Google Maps Karte** kann bei Fährstrecken unrealistische Routen anzeigen (z. B. durchs Meer) – **die ETA-Berechnung ist trotzdem korrekt**.
+🛳️ **Hinweis zu Fähren**:
+- Google Maps zeigt bei Fährverbindungen oft **unrealistische Linien durch das Meer**.
+- Die **berechnete Zeit stimmt trotzdem**, da die App den **echten Fahrplan** und die **gesetzliche Ruhezeit** berücksichtigt.
 
-- Zwischenstopps können jederzeit eingefügt werden – die Route wird dynamisch angepasst.
+📌 **Zusatzfunktionen** (frei einblendbar):
+- Zwischenstopps
+- Pause/Einsatzzeit erfassen
+- Wochenruhe
+- Geschwindigkeit, Tankpause
 
-- Wochenlenkzeit wird mitgerechnet (56h Limit)
-
-**Hinweis**: Alle Zeiten basieren auf lokaler Zeit am Zielort.
+👆 **Am besten Schritt für Schritt ausfüllen, dann '📦 Berechnen & ETA anzeigen' drücken.**
 """)
 
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+st.title("🚛 DriverRoute ETA – Fusion-Version"
 
 # 🚢 Fährenfahrplan
 FAHRPLAN = {
@@ -199,32 +204,35 @@ else:
 abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
 start_time = local_tz.localize(abfahrt_time)
 
-erweiterungen_anzeigen = st.checkbox("🔧 Zusätzliche Eingaben anzeigen (z. B. Einsatzzeit, Lenkzeit)", value=False)
-if erweiterungen_anzeigen:
+# 🔁 Zusatz: Bisherige Fahrzeit & Einsatzzeit
+st.markdown("### 📍 Zwischeneinstieg – bisherige Fahrt erfassen")
 
-    # 🔁 Zusatz: Bisherige Fahrzeit & Einsatzzeit
-    st.markdown("### 📍 Zwischeneinstieg – bisherige Fahrt erfassen")
+st.markdown("### 🕓 Bereits gefahrene Lenkzeit heute (optional)")
+col_b1, col_b2 = st.columns(2)
+with col_b1:
+    gefahrene_stunden = st.number_input("🕓 Stunden", 0, 10, 0, step=1)
+with col_b2:
+    gefahrene_minuten = st.number_input("🕧 Minuten", 0, 59, 0, step=5)
+bisher_gefahren_min = gefahrene_stunden * 60 + gefahrene_minuten
+if bisher_gefahren_min > 0:
+    st.info(f"✅ Bereits gefahren: {gefahrene_stunden}h{gefahrene_minuten:02d}")
 
-    st.markdown("### 🕓 Bereits gefahrene Lenkzeit heute (optional)")
-    col_b1, col_b2 = st.columns(2)
-    with col_b1:
-        gefahrene_stunden = st.number_input("🕓 Stunden", 0, 10, 0, step=1)
-    with col_b2:
-        gefahrene_minuten = st.number_input("🕧 Minuten", 0, 59, 0, step=5)
-    bisher_gefahren_min = gefahrene_stunden * 60 + gefahrene_minuten
-    if bisher_gefahren_min > 0:
-        st.info(f"✅ Bereits gefahren: {gefahrene_stunden}h{gefahrene_minuten:02d}")
+st.markdown("### ⏱ Gesamteinsatzzeit bisher (optional)")
+col_e1, col_e2 = st.columns(2)
+with col_e1:
+    einsatz_stunden = st.number_input("⏱ Stunden", 0, 12, 0, step=1)
+with col_e2:
+    einsatz_minuten = st.number_input("Minuten", 0, 59, 0, step=5)
 
-    st.markdown("### ⏱ Gesamteinsatzzeit bisher (optional)")
-    col_e1, col_e2 = st.columns(2)
-    with col_e1:
-        einsatz_stunden = st.number_input("⏱ Stunden", 0, 12, 0, step=1)
-    with col_e2:
-        einsatz_minuten = st.number_input("Minuten", 0, 59, 0, step=5)
-    einsatz_bisher_min = einsatz_stunden * 60 + einsatz_minuten
-    if einsatz_bisher_min > 0:
-        start_time -= timedelta(minutes=einsatz_bisher_min)
-        st.caption(f"🔁 Neue Startzeit durch Rückrechnung: {start_time.strftime('%Y-%m-%d %H:%M')}")
+einsatz_bisher_min = einsatz_stunden * 60 + einsatz_minuten
+if einsatz_bisher_min > 0:
+    start_time -= timedelta(minutes=einsatz_bisher_min)
+    st.caption(f"🔁 Neue Startzeit durch Rückrechnung: {start_time.strftime('%Y-%m-%d %H:%M')}")
+
+# ⛽ Geschwindigkeit + Tankpause
+geschwindigkeit = st.number_input("🛻 Durchschnittsgeschwindigkeit (km/h)", 60, 120, 80)
+tankpause = st.checkbox("⛽ Tankpause (30 min)?")
+
 # 🛌 Wochenruhepause
 st.markdown("### 🛌 Wochenruhepause (optional)")
 wochenruhe_manuell = st.checkbox("Wöchentliche Ruhezeit während der Tour einfügen?")
@@ -294,32 +302,33 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             log.append(f"🕒 Fahrtzeit bisher: {bisher_gefahren_min} min → wird angerechnet")
 
         while remaining > 0:
-    if we_start and we_start <= aktuelle_zeit < we_ende:
-        log.append(f"🛌 Wochenruhe von {we_start.strftime('%Y-%m-%d %H:%M')} bis {we_ende.strftime('%Y-%m-%d %H:%M')}")
-        aktuelle_zeit = we_ende
-        zehner_index = 0
-        neuner_index = 0
-        continue
+            if we_start and we_start <= aktuelle_zeit < we_ende:
+                log.append(f"🛌 Wochenruhe von {we_start.strftime('%Y-%m-%d %H:%M')} bis {we_ende.strftime('%Y-%m-%d %H:%M')}")
+                aktuelle_zeit = we_ende
+                zehner_index = 0
+                neuner_index = 0
+                continue
 
-    if aktuelle_zeit.weekday() == 0 and aktuelle_zeit.hour >= 2:
-        zehner_index = 0
-        neuner_index = 0
+            if aktuelle_zeit.weekday() == 0 and aktuelle_zeit.hour >= 2:
+                log.append("🔄 Wochenreset: Montag ab 02:00")
+                zehner_index = 0
+                neuner_index = 0
 
-    max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
-    gefahren = min(remaining, max_drive)
-    pausen = 45 if gefahren >= 270 else 0
-    if tankpause and not used_tank:
-        pausen += 30
-        used_tank = True
+            max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
+            gefahren = min(remaining, max_drive)
+            pausen = 45 if gefahren >= 270 else 0
+            if tankpause and not used_tank:
+                pausen += 30
+                used_tank = True
 
-    ende = aktuelle_zeit + timedelta(minutes=gefahren + pausen)
-    log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min → {ende.strftime('%H:%M')}")
-    aktuelle_zeit = ende
-    remaining -= gefahren
-    letzte_ankunft = ende
+            ende = aktuelle_zeit + timedelta(minutes=gefahren + pausen)
+            log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min → {ende.strftime('%H:%M')}")
+            aktuelle_zeit = ende
+            remaining -= gefahren
+            letzte_ankunft = ende
 
-    if remaining <= 0:
-        break
+            if remaining <= 0:
+                break
 
             ruhe = 540 if neuner_index < 3 and neuner_ruhen[neuner_index] else 660
             aktuelle_zeit += timedelta(minutes=ruhe)
