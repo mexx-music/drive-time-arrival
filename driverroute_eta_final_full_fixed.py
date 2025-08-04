@@ -420,6 +420,10 @@ else:
     if naechste_abfahrt:
         wartezeit = int((naechste_abfahrt - aktuelle_zeit).total_seconds() / 60)
         log.append(f"⏱ Wartezeit bis Fähre: {wartezeit} min → Abfahrt: {naechste_abfahrt.strftime('%H:%M')}")
+        aktuelle_zeit = naechste_abfahrt:
+
+        wartezeit = int((naechste_abfahrt - aktuelle_zeit).total_seconds() / 60)
+        log.append(f"⏱ Wartezeit bis Fähre: {wartezeit} min → Abfahrt: {naechste_abfahrt.strftime('%H:%M')}")
         aktuelle_zeit = naechste_abfahrt
 
 
