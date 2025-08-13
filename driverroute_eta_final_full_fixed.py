@@ -638,12 +638,12 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
         st.markdown(
         f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
-        f"<h3 style='text-align: center; color: green;'>{zielort}</h3>"
         f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
         unsafe_allow_html=True
     )
-else:
-    st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
+    else:
+        st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
+
     # 🗺️ Google Maps Karte
     map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
     if zwischenstopps:
