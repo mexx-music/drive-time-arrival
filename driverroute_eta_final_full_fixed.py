@@ -632,9 +632,9 @@ if st.button("📦 Berechnen & ETA anzeigen"):
     for eintrag in log:
         st.markdown(eintrag)
 
-    # ✅ ETA anzeigen
+ # ✅ ETA anzeigen (Zielort groß & grün, ohne Zeitzonen-Text)
 ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-if letzte_ankunft:
+if letzte_ankunft is not None:
     letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
     st.markdown(
         f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u></h2>"
