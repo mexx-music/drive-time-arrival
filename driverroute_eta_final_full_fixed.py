@@ -638,6 +638,8 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
         st.markdown(
         f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
+        f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
+        f"<h3 style='text-align: center; color: green;'>{zielort}</h3>"
         f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
         unsafe_allow_html=True
     )
