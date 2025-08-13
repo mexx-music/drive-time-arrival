@@ -639,7 +639,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         st.markdown(
             f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
             f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>"
-            f"({ziel_tz.zone})</h2>",
+        
             unsafe_allow_html=True
         )
     else:
