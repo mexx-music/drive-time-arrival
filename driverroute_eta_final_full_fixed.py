@@ -404,7 +404,12 @@ zielort = col2.text_input("🏁 Zielort oder PLZ", "")
 now_local, local_tz = get_local_time(startort)
 st.caption(get_place_info(startort))
 st.caption(get_place_info(zielort))
-
+# 🟢 Zielort groß & grün (unabhängig von der Berechnung)
+if zielort.strip():
+    st.markdown(
+        f"<h2 style='text-align:center; color:green; margin:0.4rem 0;'>🏁 {zielort}</h2>",
+        unsafe_allow_html=True
+    )
 # ➕ Zwischenstopps
 st.markdown("### ➕ Zwischenstopps")
 if "zwischenstopps" not in st.session_state:
