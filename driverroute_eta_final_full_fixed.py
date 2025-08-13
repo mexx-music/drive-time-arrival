@@ -575,7 +575,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
 
             max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
             gefahren = min(remaining, max_drive)
-            pausen = 45 if gefahren >= 270 else 0
+            pausen = (gefahren // 270) * 45
             if tankpause and not used_tank:
                 pausen += 30
                 used_tank = True
