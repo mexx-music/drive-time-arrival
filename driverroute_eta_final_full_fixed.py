@@ -454,18 +454,19 @@ elif auto_faehre:
 
 # 🕒 Abfahrt (Pause oder direkt)
 st.markdown("### 🕒 Abfahrtszeit planen")
+with st.expander("⏳ Pause / Abfahrtszeit einstellen", expanded=False):
 pause_aktiv = st.checkbox("Ich bin gerade in Pause – Abfahrt folgt:")
-if pause_aktiv:
-    abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
-    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
-    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, 0)
-else:
-    abfahrt_datum = st.date_input("Datum", value=now_local.date())
-    abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
-    abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
+    if pause_aktiv:
+        abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
+        abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
+        abfahrt_minute = st.number_input("🕧 Minute", 0, 59, 0)
+    else:
+        abfahrt_datum = st.date_input("Datum", value=now_local.date())
+        abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, now_local.hour)
+        abfahrt_minute = st.number_input("🕧 Minute", 0, 59, now_local.minute)
 
-abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
-start_time = local_tz.localize(abfahrt_time)
+    abfahrt_time = datetime.combine(abfahrt_datum, datetime.strptime(f"{abfahrt_stunde}:{abfahrt_minute}", "%H:%M").time())
+    start_time = local_tz.localize(abfahrt_time)
 
 # 📍 Fahrtzeit & Einsatzzeit in Expander
 with st.expander("🕒 Zwischeneinstieg – bereits gefahrene Zeit eingeben"):
