@@ -455,7 +455,7 @@ elif auto_faehre:
 # 🕒 Abfahrt (Pause oder direkt)
 st.markdown("### 🕒 Abfahrtszeit planen")
 with st.expander("⏳ Pause / Abfahrtszeit einstellen", expanded=False):
-pause_aktiv = st.checkbox("Ich bin gerade in Pause – Abfahrt folgt:")
+    pause_aktiv = st.checkbox("Ich bin gerade in Pause – Abfahrt folgt:")
     if pause_aktiv:
         abfahrt_datum = st.date_input("📅 Datum der Abfahrt", value=now_local.date())
         abfahrt_stunde = st.number_input("🕓 Stunde", 0, 23, 4)
