@@ -404,12 +404,7 @@ zielort = col2.text_input("🏁 Zielort oder PLZ", "")
 now_local, local_tz = get_local_time(startort)
 st.caption(get_place_info(startort))
 st.caption(get_place_info(zielort))
-# 🟢 Zielort groß & grün (unabhängig von der Berechnung)
-if zielort.strip():
-    st.markdown(
-        f"<h2 style='text-align:center; color:green; margin:0.4rem 0;'>🏁 {zielort}</h2>",
-        unsafe_allow_html=True
-    )
+
 # ➕ Zwischenstopps
 st.markdown("### ➕ Zwischenstopps")
 if "zwischenstopps" not in st.session_state:
@@ -637,23 +632,17 @@ if st.button("📦 Berechnen & ETA anzeigen"):
     for eintrag in log:
         st.markdown(eintrag)
 
-    # ✅ ETA anzeigen (Zielort immer sichtbar, Uhrzeit nur wenn berechnet)
+    # ✅ ETA anzeigen
     ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-
-    # Überschrift + Zielort immer zeigen
-    st.markdown("<h2 style='text-align:center; color:green;'>✅ <u>Ankunftszeit:</u></h2>", unsafe_allow_html=True)
-    if zielort.strip():
-        st.markdown(f"<h3 style='text-align:center; color:green;'>{zielort}</h3>", unsafe_allow_html=True)
-
-    # Uhrzeit nur, wenn letzte_ankunft vorhanden ist
     if letzte_ankunft:
         letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
         st.markdown(
-            f"<h2 style='text-align:center; color:green;'>🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
-            unsafe_allow_html=True
+        f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
+        f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
+        unsafe_allow_html=True
     )
-else:
-    st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
+    else:
+        st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
 
     # 🗺️ Google Maps Karte
     map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
