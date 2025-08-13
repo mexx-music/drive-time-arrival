@@ -11,6 +11,40 @@ GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
 # 🚢 Fährenfahrplan
 FAHRPLAN = {
+  "Hirtshals–Kristiansand (Fjord Line)": {
+    "gesellschaft": "Fjord Line",
+    "dauer_stunden": 2.4167,
+    "abfahrten": [
+      "09:30",
+      "12:10",
+      "20:30"
+    ]
+  },
+  "Kristiansand–Hirtshals (Fjord Line)": {
+    "gesellschaft": "Fjord Line",
+    "dauer_stunden": 2.4167,
+    "abfahrten": [
+      "08:00",
+      "14:20",
+      "17:30"
+    ]
+  },
+  "Hirtshals–Kristiansand (Color Line)": {
+    "gesellschaft": "Color Line",
+    "dauer_stunden": 3.25,
+    "abfahrten": [
+      "12:15",
+      "20:45"
+    ]
+  },
+  "Kristiansand–Hirtshals (Color Line)": {
+    "gesellschaft": "Color Line",
+    "dauer_stunden": 3.25,
+    "abfahrten": [
+      "08:00",
+      "16:30"
+    ]
+  },
   "Patras–Ancona (Superfast)": {
     "gesellschaft": "Superfast",
     "dauer_stunden": 22,
