@@ -632,19 +632,17 @@ if st.button("📦 Berechnen & ETA anzeigen"):
     for eintrag in log:
         st.markdown(eintrag)
 
-    # ✅ ETA anzeigen (mit großem grünem Zielort)
+    # ✅ ETA anzeigen
     ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
     if letzte_ankunft:
         letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
         st.markdown(
-        f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u></h2>"
-        f"<h3 style='text-align: center; color: green;'>{zielort}</h3>"
-        f"<h2 style='text-align: center; color: green;'>🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
+        f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
+        f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
         unsafe_allow_html=True
     )
-else:
-    st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
-    
+    else:
+        st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
 
     # 🗺️ Google Maps Karte
     map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
