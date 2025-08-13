@@ -11,20 +11,274 @@ GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
 # 🚢 Fährenfahrplan
 FAHRPLAN = {
-    "Patras–Ancona (Superfast)": {"gesellschaft": "Superfast", "dauer_stunden": 22, "abfahrten": ["08:00", "17:30", "22:00"]},
-    "Ancona–Patras (Superfast)": {"gesellschaft": "Superfast", "dauer_stunden": 22, "abfahrten": ["08:00", "17:30", "22:00"]},
-    "Igoumenitsa–Ancona (Superfast)": {"gesellschaft": "Superfast", "dauer_stunden": 20, "abfahrten": ["06:30", "13:30", "20:00"]},
-    "Ancona–Igoumenitsa (Superfast)": {"gesellschaft": "Superfast", "dauer_stunden": 20, "abfahrten": ["06:30", "13:30", "20:00"]},
-    "Igoumenitsa–Bari (Grimaldi)": {"gesellschaft": "Grimaldi", "dauer_stunden": 10, "abfahrten": ["12:00", "18:00", "23:59"]},
-    "Bari–Igoumenitsa (Grimaldi)": {"gesellschaft": "Grimaldi", "dauer_stunden": 10, "abfahrten": ["10:00", "17:00", "22:00"]},
-    "Igoumenitsa–Brindisi (Grimaldi)": {"gesellschaft": "Grimaldi", "dauer_stunden": 9, "abfahrten": ["08:00", "15:00", "21:30"]},
-    "Brindisi–Igoumenitsa (Grimaldi)": {"gesellschaft": "Grimaldi", "dauer_stunden": 9, "abfahrten": ["07:00", "14:00", "20:00"]},
-    "Trelleborg–Travemünde (TT-Line)": {"gesellschaft": "TT-Line", "dauer_stunden": 9, "abfahrten": ["02:00", "10:00", "20:00"]},
-    "Travemünde–Trelleborg (TT-Line)": {"gesellschaft": "TT-Line", "dauer_stunden": 9, "abfahrten": ["04:00", "12:00", "22:00"]},
-    "Color Line Kiel–Oslo": {"gesellschaft": "Color Line", "dauer_stunden": 20, "abfahrten": ["14:00"]},
-    "Color Line Oslo–Kiel": {"gesellschaft": "Color Line", "dauer_stunden": 20, "abfahrten": ["14:00"]},
-    "Hirtshals–Bergen (FjordLine)": {"gesellschaft": "FjordLine", "dauer_stunden": 16, "abfahrten": ["08:00"]},
-    "Bergen–Hirtshals (FjordLine)": {"gesellschaft": "FjordLine", "dauer_stunden": 16, "abfahrten": ["13:30"]}
+  "Patras–Ancona (Superfast)": {
+    "gesellschaft": "Superfast",
+    "dauer_stunden": 22,
+    "abfahrten": [
+      "08:00",
+      "17:30",
+      "22:00"
+    ]
+  },
+  "Ancona–Patras (Superfast)": {
+    "gesellschaft": "Superfast",
+    "dauer_stunden": 22,
+    "abfahrten": [
+      "08:00",
+      "17:30",
+      "22:00"
+    ]
+  },
+  "Igoumenitsa–Ancona (Superfast)": {
+    "gesellschaft": "Superfast",
+    "dauer_stunden": 20,
+    "abfahrten": [
+      "06:30",
+      "13:30",
+      "20:00"
+    ]
+  },
+  "Ancona–Igoumenitsa (Superfast)": {
+    "gesellschaft": "Superfast",
+    "dauer_stunden": 20,
+    "abfahrten": [
+      "06:30",
+      "13:30",
+      "20:00"
+    ]
+  },
+  "Igoumenitsa–Bari (Grimaldi)": {
+    "gesellschaft": "Grimaldi",
+    "dauer_stunden": 10,
+    "abfahrten": [
+      "12:00",
+      "18:00",
+      "23:59"
+    ]
+  },
+  "Bari–Igoumenitsa (Grimaldi)": {
+    "gesellschaft": "Grimaldi",
+    "dauer_stunden": 10,
+    "abfahrten": [
+      "10:00",
+      "17:00",
+      "22:00"
+    ]
+  },
+  "Igoumenitsa–Brindisi (Grimaldi)": {
+    "gesellschaft": "Grimaldi",
+    "dauer_stunden": 9,
+    "abfahrten": [
+      "08:00",
+      "15:00",
+      "21:30"
+    ]
+  },
+  "Brindisi–Igoumenitsa (Grimaldi)": {
+    "gesellschaft": "Grimaldi",
+    "dauer_stunden": 9,
+    "abfahrten": [
+      "07:00",
+      "14:00",
+      "20:00"
+    ]
+  },
+  "Patras–Bari (Grimaldi)": {
+    "gesellschaft": "Grimaldi",
+    "dauer_stunden": 18,
+    "abfahrten": [
+      "10:00",
+      "19:00"
+    ]
+  },
+  "Bari–Patras (Grimaldi)": {
+    "gesellschaft": "Grimaldi",
+    "dauer_stunden": 18,
+    "abfahrten": [
+      "08:00",
+      "17:00"
+    ]
+  },
+  "Patras–Brindisi (Grimaldi)": {
+    "gesellschaft": "Grimaldi",
+    "dauer_stunden": 19,
+    "abfahrten": [
+      "07:00",
+      "15:00"
+    ]
+  },
+  "Brindisi–Patras (Grimaldi)": {
+    "gesellschaft": "Grimaldi",
+    "dauer_stunden": 19,
+    "abfahrten": [
+      "06:00",
+      "16:00"
+    ]
+  },
+  "Patras–Venedig (Anek/Superfast)": {
+    "gesellschaft": "Anek/Superfast",
+    "dauer_stunden": 32,
+    "abfahrten": [
+      "12:00",
+      "19:00"
+    ]
+  },
+  "Venedig–Patras (Anek/Superfast)": {
+    "gesellschaft": "Anek/Superfast",
+    "dauer_stunden": 32,
+    "abfahrten": [
+      "12:00",
+      "19:00"
+    ]
+  },
+  "Trelleborg–Travemünde (TT-Line)": {
+    "gesellschaft": "TT-Line",
+    "dauer_stunden": 9,
+    "abfahrten": [
+      "02:00",
+      "10:00",
+      "20:00"
+    ]
+  },
+  "Travemünde–Trelleborg (TT-Line)": {
+    "gesellschaft": "TT-Line",
+    "dauer_stunden": 9,
+    "abfahrten": [
+      "04:00",
+      "12:00",
+      "22:00"
+    ]
+  },
+  "Travemünde–Trelleborg (Stena Line)": {
+    "gesellschaft": "Stena Line",
+    "dauer_stunden": 9,
+    "abfahrten": [
+      "07:00",
+      "22:00"
+    ]
+  },
+  "Trelleborg–Travemünde (Stena Line)": {
+    "gesellschaft": "Stena Line",
+    "dauer_stunden": 9,
+    "abfahrten": [
+      "07:00",
+      "22:00"
+    ]
+  },
+  "Trelleborg–Kiel (TT-Line)": {
+    "gesellschaft": "TT-Line",
+    "dauer_stunden": 13,
+    "abfahrten": [
+      "01:00",
+      "15:00"
+    ]
+  },
+  "Kiel–Trelleborg (TT-Line)": {
+    "gesellschaft": "TT-Line",
+    "dauer_stunden": 13,
+    "abfahrten": [
+      "05:00",
+      "19:00"
+    ]
+  },
+  "Rostock–Trelleborg (Stena Line)": {
+    "gesellschaft": "Stena Line",
+    "dauer_stunden": 6.5,
+    "abfahrten": [
+      "07:00",
+      "15:00",
+      "23:00"
+    ]
+  },
+  "Trelleborg–Rostock (Stena Line)": {
+    "gesellschaft": "Stena Line",
+    "dauer_stunden": 6.5,
+    "abfahrten": [
+      "07:00",
+      "15:00",
+      "23:00"
+    ]
+  },
+  "Trelleborg–Swinemünde (TT-Line)": {
+    "gesellschaft": "TT-Line",
+    "dauer_stunden": 6.5,
+    "abfahrten": [
+      "07:00",
+      "15:00",
+      "23:00"
+    ]
+  },
+  "Swinemünde–Trelleborg (TT-Line)": {
+    "gesellschaft": "TT-Line",
+    "dauer_stunden": 6.5,
+    "abfahrten": [
+      "07:00",
+      "15:00",
+      "23:00"
+    ]
+  },
+  "Grenaa–Halmstad (Stena Line)": {
+    "gesellschaft": "Stena Line",
+    "dauer_stunden": 4.5,
+    "abfahrten": [
+      "08:00",
+      "14:00",
+      "20:00"
+    ]
+  },
+  "Halmstad–Grenaa (Stena Line)": {
+    "gesellschaft": "Stena Line",
+    "dauer_stunden": 4.5,
+    "abfahrten": [
+      "07:00",
+      "13:00",
+      "19:00"
+    ]
+  },
+  "Color Line Kiel–Oslo": {
+    "gesellschaft": "Color Line",
+    "dauer_stunden": 20,
+    "abfahrten": [
+      "14:00"
+    ]
+  },
+  "Color Line Oslo–Kiel": {
+    "gesellschaft": "Color Line",
+    "dauer_stunden": 20,
+    "abfahrten": [
+      "14:00"
+    ]
+  },
+  "Hirtshals–Stavanger (FjordLine)": {
+    "gesellschaft": "FjordLine",
+    "dauer_stunden": 10,
+    "abfahrten": [
+      "08:00",
+      "20:00"
+    ]
+  },
+  "Stavanger–Hirtshals (FjordLine)": {
+    "gesellschaft": "FjordLine",
+    "dauer_stunden": 10,
+    "abfahrten": [
+      "09:00",
+      "21:00"
+    ]
+  },
+  "Hirtshals–Bergen (FjordLine)": {
+    "gesellschaft": "FjordLine",
+    "dauer_stunden": 16,
+    "abfahrten": [
+      "08:00"
+    ]
+  },
+  "Bergen–Hirtshals (FjordLine)": {
+    "gesellschaft": "FjordLine",
+    "dauer_stunden": 16,
+    "abfahrten": [
+      "13:30"
+    ]
+  }
 }
 
 # 🌍 Zeitzone anhand Adresse
