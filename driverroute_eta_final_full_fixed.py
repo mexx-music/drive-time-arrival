@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import pytz
 import math
 import time
-letzte_ankunft = None
+
 st.set_page_config(page_title="DriverRoute ETA – Fusion Ultimo", layout="centered")
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
@@ -508,12 +508,7 @@ with col_b:
 
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
-# ✅ Eingaben prüfen (verhindert "Invalid 'origin' parameter")
-start_ok = bool(startort.strip())
-ziel_ok  = bool(zielort.strip())
 
-if not start_ok or not ziel_ok:
-    st.warning("❗ Bitte Start- und Zielort eingeben (mind. Stadt + Land oder PLZ).")
 # 🚦 Start der Berechnung
 if st.button("📦 Berechnen & ETA anzeigen"):
     log = []
@@ -637,18 +632,18 @@ if st.button("📦 Berechnen & ETA anzeigen"):
     for eintrag in log:
         st.markdown(eintrag)
 
-    # ✅ ETA-Anzeige (Zielort groß & grün, keine Zeitzone)
-ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
-if letzte_ankunft is not None:
-    letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
-    st.markdown(
-        f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u></h2>"
-        f"<h3 style='text-align: center; color: green;'>{zielort}</h3>"
-        f"<h2 style='text-align: center; color: green;'>🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
-        unsafe_allow_html=True
-    )
-else:
-    st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
+    # ✅ ETA anzeigen
+    ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
+    if letzte_ankunft:
+        letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
+        st.markdown(
+            f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u><br>"
+            f"🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b><br>"
+            f"({ziel_tz.zone})</h2>",
+            unsafe_allow_html=True
+        )
+    else:
+        st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
 
     # 🗺️ Google Maps Karte
     map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
