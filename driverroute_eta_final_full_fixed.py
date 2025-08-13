@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import pytz
 import math
 import time
-
+letzte_ankunft = None
 st.set_page_config(page_title="DriverRoute ETA – Fusion Ultimo", layout="centered")
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
@@ -629,10 +629,21 @@ if st.button("📦 Berechnen & ETA anzeigen"):
 
     # 📋 Fahrplan anzeigen
     st.markdown("## 📋 Fahrplan:")
-    for eintrag in log:
+    for eintrag in log:# ✅ ETA-Anzeige (Zielort groß & grün, keine Zeitzone)
+ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
+if letzte_ankunft is not None:
+    letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
+    st.markdown(
+        f"<h2 style='text-align: center; color: green;'>✅ <u>Ankunftszeit:</u></h2>"
+        f"<h3 style='text-align: center; color: green;'>{zielort}</h3>"
+        f"<h2 style='text-align: center; color: green;'>🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
+        unsafe_allow_html=True
+    )
+else:
+    st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
         st.markdown(eintrag)
 
- # ✅ ETA anzeigen (Zielort groß & grün, ohne Zeitzonen-Text)
+# ✅ ETA-Anzeige (Zielort groß & grün, keine Zeitzone)
 ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
 if letzte_ankunft is not None:
     letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
