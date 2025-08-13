@@ -633,7 +633,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         st.markdown(eintrag)
 
     # ✅ ETA anzeigen
-    ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
+ziel_tz = pytz.timezone(get_timezone_for_address(zielort))
 if letzte_ankunft:
     letzte_ankunft = letzte_ankunft.astimezone(ziel_tz)
     st.markdown(
@@ -642,6 +642,8 @@ if letzte_ankunft:
         f"<h2 style='text-align: center; color: green;'>🕓 <b>{letzte_ankunft.strftime('%A, %d.%m.%Y – %H:%M')}</b></h2>",
         unsafe_allow_html=True
     )
+else:
+    st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
     else:
         st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
 
