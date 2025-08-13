@@ -508,7 +508,12 @@ with col_b:
 
 zehner_fahrten = [zehner_1, zehner_2]
 neuner_ruhen = [neuner_1, neuner_2, neuner_3]
+# ✅ Eingaben prüfen (verhindert "Invalid 'origin' parameter")
+start_ok = bool(startort.strip())
+ziel_ok  = bool(zielort.strip())
 
+if not start_ok or not ziel_ok:
+    st.warning("❗ Bitte Start- und Zielort eingeben (mind. Stadt + Land oder PLZ).")
 # 🚦 Start der Berechnung
 if st.button("📦 Berechnen & ETA anzeigen"):
     log = []
