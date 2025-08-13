@@ -644,8 +644,7 @@ if letzte_ankunft:
     )
 else:
     st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
-    else:
-        st.error("❌ Ankunftszeit konnte nicht berechnet werden – bitte Eingaben prüfen.")
+    
 
     # 🗺️ Google Maps Karte
     map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={urllib.parse.quote(startort)}&destination={urllib.parse.quote(zielort)}"
