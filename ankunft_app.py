@@ -242,23 +242,41 @@ FAHRPLAN = {
       "23:00"
     ]
   },
-  "Trelleborg–Rostock (Stena Line)": {
-    "gesellschaft": "Stena Line",
+  "Rostock–Trelleborg (TT-Line)": {
+  "gesellschaft": "TT-Line",
+  "dauer_stunden": 6.5,
+  "abfahrten": [
+    "07:30",
+    "15:00",
+    "22:30"
+     ]
+   },
+   "Trelleborg–Rostock (TT-Line)": {
+   "gesellschaft": "TT-Line",
+   "dauer_stunden": 6.5,
+   "abfahrten": [
+     "07:30",
+     "15:00",
+     "22:30"
+      ]  
+    },
+    "Trelleborg–Rostock (Stena Line)": {       
+    "gesellschaft": "Stena Line",    
     "dauer_stunden": 6.5,
     "abfahrten": [
       "07:00",
       "15:00",
       "23:00"
-    ]
-  },
-  "Trelleborg–Swinemünde (TT-Line)": {
+       ]
+    },
+    "Trelleborg–Swinemünde (TT-Line)": {
     "gesellschaft": "TT-Line",
     "dauer_stunden": 6.5,
     "abfahrten": [
       "07:00",
       "15:00",
       "23:00"
-    ]
+       ]
   },
   "Swinemünde–Trelleborg (TT-Line)": {
     "gesellschaft": "TT-Line",
