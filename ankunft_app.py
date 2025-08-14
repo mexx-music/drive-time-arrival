@@ -586,8 +586,8 @@ if st.button("📦 Berechnen & ETA anzeigen"):
                 pausen = (gefahren // 270) * 45
 
             if tankpause and not used_tank:
-            pausen += 30
-            used_tank = True
+                pausen += 30
+                used_tank = True
 
             ende = aktuelle_zeit + timedelta(minutes=gefahren + pausen)
             log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min → {ende.strftime('%H:%M')}")
