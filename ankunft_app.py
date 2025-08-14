@@ -578,11 +578,11 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             gefahren = min(remaining, max_drive)
 
          # 🔹 Neue Pausenlogik: 9h → 45 min, 10h → 90 min
-           if gefahren >= 600:       # 10 Stunden Fahrt. 
+            if gefahren >= 600:       # 10 Stunden Fahrt. 
                pausen = 90
-         elif gefahren >= 540:     # 9 Stunden Fahrt
+            elif gefahren >= 540:     # 9 Stunden Fahrt
                pausen = 45
-           else:
+            else:
                pausen = (gefahren // 270) * 45
 
             if tankpause and not used_tank:
