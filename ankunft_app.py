@@ -564,6 +564,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
         if i == 0 and bisher_gefahren_min > 0:
             remaining += bisher_gefahren_min
             log.append(f"🕒 Fahrtzeit bisher: {bisher_gefahren_min} min → wird angerechnet")
+# ... (vorheriger Code bleibt unverändert)
 
         while remaining > 0:
             if we_start and we_start <= aktuelle_zeit < we_ende:
@@ -575,13 +576,21 @@ if st.button("📦 Berechnen & ETA anzeigen"):
 
             max_drive = 600 if zehner_index < 2 and zehner_fahrten[zehner_index] else 540
             gefahren = min(remaining, max_drive)
-            pausen = (gefahren // 270) * 45
+
+         # 🔹 Neue Pausenlogik: 9h → 45 min, 10h → 90 min
+           if gefahren >= 600:       # 10 Stunden Fahrt. 
+               pausen = 90
+         elif gefahren >= 540:     # 9 Stunden Fahrt
+               pausen = 45
+           else:
+               pausen = (gefahren // 270) * 45
+
             if tankpause and not used_tank:
-                pausen += 30
-                used_tank = True
+            pausen += 30
+            used_tank = True
 
             ende = aktuelle_zeit + timedelta(minutes=gefahren + pausen)
-            log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min → {ende.strftime('%H:%M')}")
+            log.append(f"📆 {aktuelle_zeit.strftime('%a %H:%M')} → {gefahren//60}h{gefahren%60:02d} + {pausen} min → {ende.strftime('%H:%M')}")
             aktuelle_zeit = ende
             remaining -= gefahren
             letzte_ankunft = ende
@@ -594,6 +603,7 @@ if st.button("📦 Berechnen & ETA anzeigen"):
             log.append(f"🌙 Ruhezeit {ruhe//60}h → Neustart: {aktuelle_zeit.strftime('%Y-%m-%d %H:%M')}")
             if zehner_index < 2: zehner_index += 1
             if neuner_index < 3: neuner_index += 1
+
 
         # 🛳 Fähre einbauen nach Abschnitt 1
         if fährblock and i == 0:
